@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resources</title>
+    <style>
+        body { font-family: monospace; padding: 2rem; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h2>Resources ({{ resources|length }} total)</h2>
+    <table>
+        <tr>
+            <th>ID</th><th>Name</th><th>Status</th>
+            <th>Data</th><th>Created</th><th>Updated</th>
+        </tr>
+        {% for r in resources %}
+        <tr>
+            <td>{{ r.id }}</td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.status }}</td>
+            <td>{{ r.data }}</td>
+            <td>{{ r.created_at }}</td>
+            <td>{{ r.updated_at }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
