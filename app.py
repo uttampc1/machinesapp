@@ -34,6 +34,9 @@ UPDATABLE_FIELDS = {
     "cpu",
     "backplane",
     "jira",
+    "box_id",
+    "current_project",
+    "team",
 }
 
 # Columns shown in the terminal table and their headers
@@ -45,6 +48,7 @@ COLUMNS = [
     ("os",            "OS"),
     ("status",        "STATUS"),
     ("reserved_by",   "RESERVED BY"),
+    ("team",          "TEAM"),
     ("po_sms",        "PO/SMS"),
     ("program",       "PROGRAM"),
     ("socket",        "SOCKET"),
@@ -66,6 +70,8 @@ COLUMNS = [
     ("backplane",     "BACKPLANE"),
     ("jira",          "JIRA"),
     ("description",   "DESCRIPTION"),
+    ("box_id",          "BOX_ID"),
+    ("current_project", "CURRENT_PROJECT"),
 ]
 
 
@@ -170,8 +176,9 @@ def insert_machine():
                  po_sms, program, socket, system_config, make, model, category,
                  asset_owner, serial, maas_switch, pdu_ip, pdu_port,
                  site, lab, row_location, rack, ru, cpu, backplane, jira,
+                 box_id, current_project, team,
                  status, reserved_by)
-            VALUES (?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?,?,?,?, 'available', NULL)
+            VALUES (?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?,?, 'available', NULL)
         """, (
             data["machine_name"],
             data["platform_name"],
@@ -199,6 +206,9 @@ def insert_machine():
             data.get("cpu"),
             data.get("backplane"),
             data.get("jira"),
+            data.get("box_id"),
+            data.get("current_project"),
+            data.get("team"),
         ))
         conn.commit()
     except Exception as e:

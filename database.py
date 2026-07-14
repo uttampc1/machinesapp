@@ -111,6 +111,21 @@ MIGRATIONS = [
             "ALTER TABLE machines ADD COLUMN jira TEXT",
         ]
     },
+    {
+        "version": 7,
+        "name":    "add_box_id_and_current_project",
+        "sql": [
+            "ALTER TABLE machines ADD COLUMN box_id TEXT",
+            "ALTER TABLE machines ADD COLUMN current_project TEXT",
+        ]
+    },
+    {
+        "version": 8,
+        "name":    "add_team_column",
+        "sql": [
+            "ALTER TABLE machines ADD COLUMN team TEXT",
+        ]
+    },
 ]
 
 def get_applied_versions(conn):

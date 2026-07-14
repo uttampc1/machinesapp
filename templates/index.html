@@ -8,10 +8,11 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: "Segoe UI", Arial, sans-serif;
+		  font-family: "Segoe UI", Arial, sans-serif;
       background: #f4f6f9;
       color: #333;
-      padding: 1.5rem;
+      padding: 1rem;
+      font-size: 0.8rem;
     }
 
     h1   { font-size: 1.5rem; margin-bottom: 0.25rem; }
@@ -197,47 +198,96 @@
 
     /* ── table ──────────────────────────────────────────────────────────── */
     .table-wrap {
-      overflow-x: auto;
+	    overflow: auto;
+      max-height: 75vh;
       max-width: 100%;
+		  border: 1px solid #ddd;
+      border-radius: 8px;
     }
 
     table {
-      width: max-content;
-      min-width: 100%;
-      border-collapse: collapse;
+	    width: max-content;
+      border-collapse: separate;
+      border-spacing: 0;
       background: #fff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,.1);
-      font-size: 0.75rem;
+      font-size: 0.7rem;
     }
     th {
-      background: #2c3e6b;
+	    background: #2c3e6b;
       color: #fff;
-      padding: 0.55rem 0.7rem;
+      padding: 0.35rem 0.5rem;
       text-align: left;
-      font-size: 0.68rem;
+      font-size: 0.62rem;
       text-transform: uppercase;
-      letter-spacing: .04em;
+      letter-spacing: .03em;
       white-space: nowrap;
       position: sticky;
       top: 0;
-      z-index: 2;
+      z-index: 10;
       cursor: pointer;
       user-select: none;
     }
     th:hover { background: #1a2a4a; }
-    th .sort-arrow { font-size: 0.6rem; margin-left: 0.3rem; }
+    th .sort-arrow { font-size: 0.55rem; margin-left: 0.2rem; }
     td {
-      padding: 0.5rem 0.7rem;
+	    padding: 0.3rem 0.5rem;
       border-bottom: 1px solid #eee;
       vertical-align: middle;
       white-space: nowrap;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.7rem;
     }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: #f0f4ff; }
     tr.hidden { display: none; }
 
+    /* narrow down wide columns */
+    td:nth-child(1) { max-width: 120px; }  /* machine name */
+    td:nth-child(2) { max-width: 70px; }   /* platform */
+    td:nth-child(3) { max-width: 110px; }  /* IP */
+    td:nth-child(4) { max-width: 100px; }  /* BMC */
+    td:nth-child(5) { max-width: 80px; }   /* OS */
+    td:nth-child(6) { max-width: 70px; }   /* status */
+    td:nth-child(7) { max-width: 90px; }   /* reserved by */
+    td:nth-child(8) { max-width: 120px; }  /* description */
+    td:nth-child(9) { max-width: 90px; }   /* PO/SMS */
+    td:nth-child(10) { max-width: 100px; } /* program */
+    td:nth-child(11) { max-width: 50px; }  /* socket */
+    td:nth-child(12) { max-width: 80px; }  /* sys config */
+    td:nth-child(13) { max-width: 70px; }  /* make */
+    td:nth-child(14) { max-width: 140px; } /* model */
+    td:nth-child(15) { max-width: 90px; }  /* category */
+    td:nth-child(16) { max-width: 80px; }  /* asset owner */
+    td:nth-child(17) { max-width: 100px; } /* serial */
+    td:nth-child(18) { max-width: 80px; }  /* maas switch */
+    td:nth-child(19) { max-width: 110px; } /* PDU IP */
+    td:nth-child(20) { max-width: 60px; }  /* PDU port */
+    td:nth-child(21) { max-width: 80px; }  /* site */
+    td:nth-child(22) { max-width: 70px; }  /* lab */
+    td:nth-child(23) { max-width: 40px; }  /* row */
+    td:nth-child(24) { max-width: 40px; }  /* rack */
+    td:nth-child(25) { max-width: 50px; }  /* RU */
+    td:nth-child(26) { max-width: 70px; }  /* CPU */
+    td:nth-child(27) { max-width: 60px; }  /* backplane */
+    td:nth-child(28) { max-width: 70px; }  /* JIRA */
+    td:nth-child(29) { max-width: 70px; }  /* box ID */
+    td:nth-child(30) { max-width: 90px; }  /* current project */
+    td:nth-child(31) { max-width: 60px; }  /* team */
+    td:nth-child(32) { max-width: 80px; }  /* updated */
+
+    /* show full text on hover */
+    td:hover {
+      overflow: visible;
+      white-space: nowrap;
+      position: relative;
+      z-index: 1;
+      background: #fff;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.15);
+    }
+
+    /* make the table use fixed layout for consistent column widths */
     mark {
       background: #fff59d;
       color: #333;
@@ -407,6 +457,10 @@
       color: #1a2a4a;
       text-decoration-style: solid;
     }
+    .team-badge { border-radius: 20px; font-size: 0.72rem; padding: 0.3rem 0.8rem; margin: 0; }
+    .team-badge.active { background: #2c3e6b; color: #fff; box-shadow: 0 0 0 2px #1a2a4a; }
+    .team-badge:not(.active) { background: #e0e5ee; color: #2c3e6b; }
+    .team-badge:not(.active):hover { background: #c8d0e0; }
   </style>
 </head>
 <body>
@@ -435,6 +489,13 @@
     </button>
   </div>
 
+  <!-- team filter badges -->
+  <div id="team-badges" style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center;">
+    <span style="font-size:0.78rem; font-weight:600; color:#555;">Team:</span>
+    <button class="btn btn-primary team-badge active" onclick="filterByTeam('')" data-team="" style="font-size:0.72rem; padding:0.3rem 0.8rem;">All</button>
+  </div>
+  <div id="team-stats" style="font-size:0.78rem; color:#666; margin-bottom:1rem;"></div>
+
   <!-- ── reservation & scripts info panel ─────────────────────────────── -->
   <div style="
     background: #e8f4fd;
@@ -461,6 +522,8 @@
       <span style="font-size:0.75rem; color:#555;">
         These commands update the machine's MOTD, broadcast to logged-in users via
         <code>wall</code>, and update this inventory database.
+      </span><br>
+      <span style="font-size:1.0rem; padding:0.1rem; color:#2c3e6b; font-weight:600; background:#fa8072; border-radius:3px">
         The machine itself is the source of truth for reservation status.
       </span>
     </div>
@@ -533,6 +596,10 @@
             <div class="form-group">
               <label>Platform <span class="req">*</span></label>
               <input type="text" name="platform_name" required placeholder="e.g. x86_64, aarch64">
+            </div>
+            <div class="form-group">
+              <label>Team name <span class="req">*</span></label>
+              <input type="text"  name="team" placeholder="e.g. DEAE">
             </div>
             <div class="form-group">
               <label>IP Address</label>
@@ -643,7 +710,7 @@
         </div>
 
         <!-- ── Hardware / Tracking ─────────────────────────────────────── -->
-        <div class="form-section">
+				<div class="form-section">
           <h3>Hardware / Tracking</h3>
           <div class="form-grid">
             <div class="form-group">
@@ -657,6 +724,14 @@
             <div class="form-group">
               <label>JIRA</label>
               <input type="text" name="jira" placeholder="e.g. PROJ-1234">
+            </div>
+            <div class="form-group">
+              <label>Box ID</label>
+              <input type="text" name="box_id" placeholder="Box identifier">
+            </div>
+            <div class="form-group">
+              <label>Current Project</label>
+              <input type="text" name="current_project" placeholder="e.g. KxNano Phase 2">
             </div>
           </div>
         </div>
@@ -696,6 +771,7 @@
             <div class="detail-row"><span class="detail-label">OS</span><span class="detail-value" id="dv-os"></span></div>
             <div class="detail-row"><span class="detail-label">Reserved By</span><span class="detail-value" id="dv-reserved_by"></span></div>
             <div class="detail-row full-width"><span class="detail-label">Description</span><span class="detail-value" id="dv-description"></span></div>
+            <div class="detail-row"><span class="detail-label">Team Name</span><span class="detail-value" id="dv-team"></span></div>
           </div>
         </div>
 
@@ -744,6 +820,8 @@
             <div class="detail-row"><span class="detail-label">CPU</span><span class="detail-value" id="dv-cpu"></span></div>
             <div class="detail-row"><span class="detail-label">Backplane</span><span class="detail-value" id="dv-backplane"></span></div>
             <div class="detail-row"><span class="detail-label">JIRA</span><span class="detail-value" id="dv-jira"></span></div>
+            <div class="detail-row"><span class="detail-label">Box ID</span><span class="detail-value" id="dv-box_id"></span></div>
+            <div class="detail-row"><span class="detail-label">Current Project</span><span class="detail-value" id="dv-current_project"></span></div>
           </div>
         </div>
 
@@ -818,6 +896,10 @@
                 <label>Description</label>
                 <textarea name="description"></textarea>
               </div>
+							 <div class="form-group">
+							   <label>Team</label>
+								 <input type="text" name="team">
+							 </div>
             </div>
           </div>
 
@@ -862,6 +944,8 @@
               <div class="form-group"><label>CPU</label><input type="text" name="cpu"></div>
               <div class="form-group"><label>Backplane</label><input type="text" name="backplane"></div>
               <div class="form-group"><label>JIRA</label><input type="text" name="jira"></div>
+              <div class="form-group"><label>Box ID</label><input type="text" name="box_id"></div>
+              <div class="form-group"><label>Current Project</label><input type="text" name="current_project"></div>
             </div>
           </div>
 
@@ -908,7 +992,10 @@
           <th class="col-sep" onclick="sortTable(25)">CPU <span class="sort-arrow">⇅</span></th>
           <th onclick="sortTable(26)">Backplane <span class="sort-arrow">⇅</span></th>
           <th class="col-sep" onclick="sortTable(27)">JIRA <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(28)">Updated <span class="sort-arrow">⇅</span></th>
+					<th onclick="sortTable(28)">Box ID <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(29)">Current Project <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(30)">Team <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(31)">Updated <span class="sort-arrow">⇅</span></th>
         </tr>
       </thead>
       <tbody>
@@ -943,11 +1030,14 @@
             <td class="col-sep">{{ m.cpu            or "" }}</td>
             <td>{{ m.backplane     or "" }}</td>
             <td class="col-sep">{{ m.jira           or "" }}</td>
+						<td>{{ m.box_id          or "" }}</td>
+            <td>{{ m.current_project or "" }}</td>
+            <td>{{ m.team   or "" }}</td>
             <td>{{ m.updated_at }}</td>
           </tr>
           {% endfor %}
         {% else %}
-          <tr><td class="empty" colspan="29">No machines registered yet.</td></tr>
+          <tr><td class="empty" colspan="32">No machines registered yet.</td></tr>
         {% endif %}
       </tbody>
     </table>
@@ -965,14 +1055,123 @@
     // ── auto-refresh ─────────────────────────────────────────────────────
     let refreshTimer = null;
     const refreshSelect = document.getElementById("auto-refresh");
+		function refreshData() {
+      fetch('/machines', {
+        headers: { 'Accept': 'application/json' }
+      })
+      .then(function(resp) {
+        if (!resp.ok) return;
+        return resp.json();
+      })
+      .then(function(machines) {
+        if (!machines) return;
+
+        // update badges
+        var total = machines.length;
+        var avail = 0;
+        var reserved = 0;
+        for (var i = 0; i < machines.length; i++) {
+          if (machines[i].status === 'available') avail++;
+          else if (machines[i].status === 'reserved') reserved++;
+        }
+
+        var badges = document.querySelectorAll('.badge');
+        badges.forEach(function(b) {
+          if (b.classList.contains('badge-total')) b.textContent = 'Total: ' + total;
+          if (b.classList.contains('badge-avail')) b.textContent = 'Available: ' + avail;
+          if (b.classList.contains('badge-reserved')) b.textContent = 'Reserved: ' + reserved;
+        });
+
+        // update timestamp
+        document.getElementById("ts").textContent = new Date().toLocaleString();
+
+        // rebuild table body
+        var tbody = document.querySelector("#machine-table tbody");
+        tbody.innerHTML = '';
+
+        if (machines.length === 0) {
+          tbody.innerHTML = '<tr><td class="empty-row" colspan="32">No machines registered yet.</td></tr>';
+          allRows = [];
+          originalData = [];
+          applyFilter();
+          return;
+        }
+
+        var fields = [
+          'machine_name','platform_name','ip_address','bmc_name','os',
+          'status','reserved_by','description',
+          'po_sms','program','socket','system_config','make','model',
+          'category','asset_owner','serial','maas_switch',
+          'pdu_ip','pdu_port',
+          'site','lab','row_location','rack','ru',
+          'cpu','backplane',
+          'jira','box_id','current_project','team','updated_at'
+        ];
+
+        // columns that get col-sep class
+        var sepCols = [8, 18, 20, 25, 27, 31];
+
+        machines.forEach(function(m) {
+          var tr = document.createElement('tr');
+
+          fields.forEach(function(field, colIdx) {
+            var td = document.createElement('td');
+            var val = m[field] || '';
+
+            if (sepCols.indexOf(colIdx) !== -1) {
+              td.className = 'col-sep';
+            }
+
+            if (colIdx === 0) {
+              // machine name — clickable link
+              var strong = document.createElement('strong');
+              strong.className = 'machine-link';
+              strong.textContent = val;
+              strong.setAttribute('onclick', "showDetail('" + val.replace(/'/g, "\\'") + "')");
+              td.appendChild(strong);
+            } else if (colIdx === 5) {
+              // status pill
+              var span = document.createElement('span');
+              span.className = 'pill pill-' + val;
+              span.textContent = val;
+              td.appendChild(span);
+            } else {
+              td.textContent = val;
+            }
+
+            tr.appendChild(td);
+          });
+
+          tbody.appendChild(tr);
+        });
+
+        // rebuild allRows and originalData
+        allRows = Array.from(tbody.querySelectorAll("tr")).filter(
+          function(r) { return !r.querySelector(".empty-row"); }
+        );
+        originalData = allRows.map(function(row) {
+          return Array.from(row.cells).map(function(cell) {
+            return { text: cell.textContent, html: cell.innerHTML };
+          });
+        });
+
+        // re-apply current filter
+				 buildTeamBadges();
+        applyFilter();
+      })
+      .catch(function(err) {
+        // silently ignore refresh errors
+      });
+    }
 
     function setAutoRefresh() {
       if (refreshTimer) clearInterval(refreshTimer);
-      const secs = parseInt(refreshSelect.value);
+      var secs = parseInt(refreshSelect.value);
       if (secs > 0) {
-        refreshTimer = setInterval(() => location.reload(), secs * 1000);
+        refreshTimer = setInterval(refreshData, secs * 1000);
       }
     }
+
     refreshSelect.addEventListener("change", setAutoRefresh);
     setAutoRefresh();
 
@@ -1230,6 +1429,7 @@
       'po_sms','program','socket','system_config','make','model','category',
       'asset_owner','serial','maas_switch','pdu_ip','pdu_port',
       'site','lab','row_location','rack','ru','cpu','backplane','jira',
+			'box_id','current_project', 'team',
       'created_at','updated_at'
     ];
 
@@ -1238,7 +1438,8 @@
       'machine_name','platform_name','ip_address','bmc_name','os','description',
       'po_sms','program','socket','system_config','make','model','category',
       'asset_owner','serial','maas_switch','pdu_ip','pdu_port',
-      'site','lab','row_location','rack','ru','cpu','backplane','jira'
+      'site','lab','row_location','rack','ru','cpu','backplane','jira',
+			'box_id','current_project', 'team'
     ];
 
     let currentMachine = null;   // holds the full machine object
@@ -1445,6 +1646,199 @@
         cancelDelete();
       }
     }
+
+		// 
+		    // ── team filter ──────────────────────────────────────────────────────
+    var activeTeam = '';
+
+    function buildTeamBadges() {
+      // collect unique team values from originalData
+      var teamSet = {};
+      var teamCol = -1;
+
+      // find team column index — it's the one before "Updated"
+      var headers = document.querySelectorAll('#machine-table th');
+      for (var i = 0; i < headers.length; i++) {
+        if (headers[i].textContent.trim().toLowerCase().indexOf('team') === 0) {
+          teamCol = i;
+          break;
+        }
+      }
+      if (teamCol === -1) return;
+
+      allRows.forEach(function(row, idx) {
+        var teamVal = originalData[idx][teamCol].text.trim();
+        if (teamVal) {
+          teamSet[teamVal] = (teamSet[teamVal] || 0) + 1;
+        }
+      });
+
+      var container = document.getElementById('team-badges');
+      // keep the label and "All" button, remove the rest
+      while (container.children.length > 2) {
+        container.removeChild(container.lastChild);
+      }
+
+      // count unassigned
+      var assigned = 0;
+      var teamNames = Object.keys(teamSet).sort();
+      teamNames.forEach(function(name) {
+        assigned += teamSet[name];
+        var btn = document.createElement('button');
+        btn.className = 'btn team-badge';
+        btn.setAttribute('data-team', name);
+        btn.setAttribute('onclick', "filterByTeam('" + name.replace(/'/g, "\\'") + "')");
+        btn.textContent = name + ' (' + teamSet[name] + ')';
+        btn.style.fontSize = '0.72rem';
+        btn.style.padding = '0.3rem 0.8rem';
+        container.appendChild(btn);
+      });
+
+      var unassigned = allRows.length - assigned;
+      if (unassigned > 0) {
+        var btn = document.createElement('button');
+        btn.className = 'btn team-badge';
+        btn.setAttribute('data-team', '__none__');
+        btn.setAttribute('onclick', "filterByTeam('__none__')");
+        btn.textContent = 'Unassigned (' + unassigned + ')';
+        btn.style.fontSize = '0.72rem';
+        btn.style.padding = '0.3rem 0.8rem';
+        container.appendChild(btn);
+      }
+
+      // update All count
+      var allBtn = container.querySelector('[data-team=""]');
+      if (allBtn) {
+        allBtn.textContent = 'All (' + allRows.length + ')';
+      }
+    }
+
+    function filterByTeam(team) {
+      activeTeam = team;
+
+      // update badge active state
+      var badges = document.querySelectorAll('.team-badge');
+      badges.forEach(function(b) {
+        var bTeam = b.getAttribute('data-team');
+        if (bTeam === team) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+
+      applyFilter();
+      updateTeamStats();
+    }
+
+    function updateTeamStats() {
+      var statsEl = document.getElementById('team-stats');
+      if (!activeTeam) {
+        statsEl.textContent = '';
+        return;
+      }
+
+      var label = activeTeam === '__none__' ? 'Unassigned' : activeTeam;
+      var visibleRows = allRows.filter(function(r) { return !r.classList.contains('hidden'); });
+      var avail = 0;
+      var reserved = 0;
+
+      visibleRows.forEach(function(row) {
+        var statusCell = row.cells[5];
+        if (statusCell) {
+          var s = statusCell.textContent.trim().toLowerCase();
+          if (s === 'available') avail++;
+          else if (s === 'reserved') reserved++;
+        }
+      });
+
+      statsEl.innerHTML = 'Showing: <strong>' + label + '</strong> (' + visibleRows.length + ' machines) — ' +
+        '<span style="color:#155724;">Available: ' + avail + '</span> | ' +
+        '<span style="color:#856404;">Reserved: ' + reserved + '</span>';
+    }
+
+    // ── patch applyFilter to include team filtering ──────────────────────
+    var _originalApplyFilter = applyFilter;
+
+    applyFilter = function() {
+      var searchTerm = searchInput.value.toLowerCase().trim();
+      var status = filterStatus.value.toLowerCase();
+      var shown = 0;
+
+      // find team column index
+      var teamCol = -1;
+      var headers = document.querySelectorAll('#machine-table th');
+      for (var i = 0; i < headers.length; i++) {
+        if (headers[i].textContent.trim().toLowerCase().indexOf('team') === 0) {
+          teamCol = i;
+          break;
+        }
+      }
+
+      allRows.forEach(function(row, rowIndex) {
+        var cellData = originalData[rowIndex];
+        var allText = cellData.map(function(c) { return c.text.toLowerCase(); }).join(" ");
+        var rowStatus = cellData[5] ? cellData[5].text.toLowerCase().trim() : "";
+
+        // team filter
+        var teamMatch = true;
+        if (activeTeam && teamCol !== -1) {
+          var rowTeam = cellData[teamCol].text.trim();
+          if (activeTeam === '__none__') {
+            teamMatch = !rowTeam;
+          } else {
+            teamMatch = rowTeam === activeTeam;
+          }
+        }
+
+        var textMatch = !searchTerm || allText.includes(searchTerm);
+        var statusMatch = !status || rowStatus === status;
+
+        if (textMatch && statusMatch && teamMatch) {
+          row.classList.remove("hidden");
+          shown++;
+
+          if (searchTerm) {
+            Array.from(row.cells).forEach(function(cell, cellIndex) {
+              var original = cellData[cellIndex];
+              if (cellIndex === 5 || cellIndex === 0) {
+                cell.innerHTML = original.html;
+                return;
+              }
+              var cellText = original.text;
+              if (cellText.toLowerCase().includes(searchTerm)) {
+                cell.innerHTML = highlightText(cellText, searchTerm);
+              } else {
+                cell.innerHTML = original.html;
+              }
+            });
+          } else {
+            Array.from(row.cells).forEach(function(cell, cellIndex) {
+              cell.innerHTML = originalData[rowIndex][cellIndex].html;
+            });
+          }
+        } else {
+          row.classList.add("hidden");
+          Array.from(row.cells).forEach(function(cell, cellIndex) {
+            cell.innerHTML = originalData[rowIndex][cellIndex].html;
+          });
+        }
+      });
+
+      var total = allRows.length;
+      if (searchTerm || status || activeTeam) {
+        filterCount.textContent = "Showing " + shown + " of " + total;
+      } else {
+        filterCount.textContent = "";
+      }
+      visibleCount.textContent = shown + " machine(s) displayed";
+
+      updateTeamStats();
+    };
+
+    // build team badges on page load
+    buildTeamBadges();
+
   </script>
 </body>
 </html>
