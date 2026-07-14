@@ -1,31 +1,1450 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Resources</title>
-    <style>
-        body { font-family: monospace; padding: 2rem; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background: #f0f0f0; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Machine Inventory</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f4f6f9;
+      color: #333;
+      padding: 1.5rem;
+    }
+
+    h1   { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .sub { color: #666; font-size: 0.82rem; margin-bottom: 1.2rem; }
+
+    .summary { display: flex; gap: 0.8rem; margin-bottom: 1.2rem; flex-wrap: wrap; align-items: center; }
+    .badge {
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .badge-total    { background: #dce3f0; color: #2c3e6b; }
+    .badge-avail    { background: #d4edda; color: #155724; }
+    .badge-reserved { background: #fff3cd; color: #856404; }
+
+    /* ── buttons ─────────────────────────────────────────────────────────── */
+    .btn {
+      font-size: 0.78rem;
+      padding: 0.4rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary { background: #2c3e6b; color: #fff; }
+    .btn-primary:hover { background: #1a2a4a; }
+    .btn-success { background: #28a745; color: #fff; }
+    .btn-success:hover { background: #1e7e34; }
+    .btn-secondary { background: #999; color: #fff; }
+    .btn-secondary:hover { background: #777; }
+    .btn-danger { background: #dc3545; color: #fff; }
+    .btn-danger:hover { background: #bd2130; }
+
+    /* ── search / filter bar ────────────────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-bar label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #555;
+    }
+    .search-input {
+      font-size: 0.82rem;
+      padding: 0.4rem 0.7rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 280px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: #2c3e6b; box-shadow: 0 0 0 2px rgba(44,62,107,.15); }
+    .filter-bar select {
+      font-size: 0.78rem;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .filter-count {
+      font-size: 0.75rem;
+      color: #666;
+      margin-left: 0.5rem;
+    }
+    .filter-hint {
+      font-size: 0.7rem;
+      color: #999;
+      margin-bottom: 0.8rem;
+    }
+
+    /* ── modal overlay ──────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 3rem;
+      overflow-y: auto;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 10px;
+      padding: 2rem;
+      width: 700px;
+      max-width: 95vw;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      position: relative;
+    }
+    .modal h2 {
+      font-size: 1.2rem;
+      margin-bottom: 1.2rem;
+      color: #2c3e6b;
+    }
+    .modal-close {
+      position: absolute;
+      top: 1rem; right: 1.2rem;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #999;
+      background: none;
+      border: none;
+      line-height: 1;
+    }
+    .modal-close:hover { color: #333; }
+
+    /* ── form layout ────────────────────────────────────────────────────── */
+    .form-section {
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid #eee;
+    }
+    .form-section:last-of-type { border-bottom: none; }
+    .form-section h3 {
+      font-size: 0.82rem;
+      color: #2c3e6b;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem 1rem;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 0.15rem;
+    }
+    .form-group label .req { color: #dc3545; }
+    .form-group input,
+    .form-group textarea {
+      font-size: 0.8rem;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      outline: none;
+      font-family: inherit;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: #2c3e6b;
+      box-shadow: 0 0 0 2px rgba(44,62,107,.12);
+    }
+    .form-group.full-width { grid-column: 1 / -1; }
+    .form-group textarea { resize: vertical; min-height: 50px; }
+
+    .form-actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 1.2rem;
+      justify-content: flex-end;
+    }
+
+    /* ── form messages ──────────────────────────────────────────────────── */
+    .form-msg {
+      padding: 0.6rem 1rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .form-msg.success { display: block; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .form-msg.error   { display: block; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+    /* ── table ──────────────────────────────────────────────────────────── */
+    .table-wrap {
+      overflow-x: auto;
+      max-width: 100%;
+    }
+
+    table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.1);
+      font-size: 0.75rem;
+    }
+    th {
+      background: #2c3e6b;
+      color: #fff;
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      cursor: pointer;
+      user-select: none;
+    }
+    th:hover { background: #1a2a4a; }
+    th .sort-arrow { font-size: 0.6rem; margin-left: 0.3rem; }
+    td {
+      padding: 0.5rem 0.7rem;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f0f4ff; }
+    tr.hidden { display: none; }
+
+    mark {
+      background: #fff59d;
+      color: #333;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 12px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .pill-available { background: #d4edda; color: #155724; }
+    .pill-reserved  { background: #fff3cd; color: #856404; }
+
+    .empty { text-align: center; padding: 2rem; color: #999; font-size: 0.85rem; }
+
+    .refresh {
+      font-size: 0.78rem;
+      color: #2c3e6b;
+      text-decoration: none;
+      padding: 0.25rem 0.7rem;
+      border: 1px solid #2c3e6b;
+      border-radius: 4px;
+      margin-left: 1rem;
+    }
+    .refresh:hover { background: #2c3e6b; color: #fff; }
+
+    .col-sep { border-left: 2px solid #b0bec5; }
+
+    .footer {
+      margin-top: 0.8rem;
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+	  /* ── detail modal ───────────────────────────────────────────────────── */
+    .detail-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 3rem;
+      overflow-y: auto;
+    }
+    .detail-overlay.active { display: flex; }
+
+    .detail-panel {
+      background: #fff;
+      border-radius: 10px;
+      padding: 2rem;
+      width: 750px;
+      max-width: 95vw;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      position: relative;
+    }
+    .detail-panel h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.3rem;
+      color: #2c3e6b;
+    }
+    .detail-panel .detail-status {
+      margin-bottom: 1.2rem;
+    }
+
+    .detail-section {
+      margin-bottom: 1rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid #eee;
+    }
+    .detail-section:last-of-type { border-bottom: none; }
+    .detail-section h3 {
+      font-size: 0.78rem;
+      color: #2c3e6b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.3rem 1.5rem;
+    }
+    .detail-row {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.2rem 0;
+    }
+    .detail-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #888;
+      min-width: 110px;
+      text-transform: uppercase;
+    }
+    .detail-value {
+      font-size: 0.8rem;
+      color: #333;
+      word-break: break-all;
+    }
+    .detail-value.empty { color: #ccc; font-style: italic; }
+
+    .detail-actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 1.2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #eee;
+    }
+    .detail-actions .spacer { flex: 1; }
+
+    /* ── edit form inside detail panel ───────────────────────────────────── */
+    .edit-form { display: none; }
+    .edit-form.active { display: block; }
+    .detail-view.hidden { display: none; }
+
+    /* ── status change controls ─────────────────────────────────────────── */
+    .status-controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .status-controls input {
+      font-size: 0.8rem;
+      padding: 0.3rem 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 200px;
+    }
+
+    /* ── confirm dialog ─────────────────────────────────────────────────── */
+    .confirm-bar {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      margin-top: 0.8rem;
+      display: none;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .confirm-bar.active { display: flex; }
+    .confirm-bar .confirm-text {
+      flex: 1;
+      font-size: 0.82rem;
+      color: #856404;
+      font-weight: 600;
+    }
+
+    /* machine name as clickable link */
+    .machine-link {
+      color: #2c3e6b;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+    }
+    .machine-link:hover {
+      color: #1a2a4a;
+      text-decoration-style: solid;
+    }
+  </style>
 </head>
 <body>
-    <h2>Resources ({{ resources|length }} total)</h2>
-    <table>
+
+  <h1>🖥️ Machine Inventory</h1>
+  <p class="sub">
+    Refreshed: <strong id="ts"></strong>
+    <a class="refresh" href="/">↻ Refresh</a>
+    <span style="margin-left:1rem; font-size:0.75rem; color:#888;">
+      Auto-refresh:
+      <select id="auto-refresh" style="font-size:0.75rem;">
+        <option value="0">Off</option>
+        <option value="30">30s</option>
+        <option value="60" selected>60s</option>
+        <option value="300">5m</option>
+      </select>
+    </span>
+  </p>
+
+  <div class="summary">
+    <span class="badge badge-total">Total: {{ total }}</span>
+    <span class="badge badge-avail">Available: {{ available }}</span>
+    <span class="badge badge-reserved">Reserved: {{ reserved }}</span>
+    <button class="btn btn-success" onclick="openInsertForm()" style="margin-left:1rem;">
+      ＋ Add Machine
+    </button>
+  </div>
+
+  <!-- ── reservation & scripts info panel ─────────────────────────────── -->
+  <div style="
+    background: #e8f4fd;
+    border: 1px solid #b8daff;
+    border-left: 4px solid #2c3e6b;
+    border-radius: 6px;
+    padding: 1rem 1.4rem;
+    margin-bottom: 1.2rem;
+    font-size: 0.82rem;
+    color: #2c3e6b;
+    line-height: 1.7;
+  ">
+    <strong style="font-size:0.92rem;">📋 Machine Management — Command Line Tools</strong>
+
+    <div style="margin-top:0.6rem;">
+      <strong>Reserve / Release a Machine</strong><br>
+      SSH into the machine and run:<br>
+      <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">machine-reserve</code>
+      to reserve &nbsp;│&nbsp;
+      <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">machine-release</code>
+      to release &nbsp;│&nbsp;
+      <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">machine-status</code>
+      to check status<br>
+      <span style="font-size:0.75rem; color:#555;">
+        These commands update the machine's MOTD, broadcast to logged-in users via
+        <code>wall</code>, and update this inventory database.
+        The machine itself is the source of truth for reservation status.
+      </span>
+    </div>
+
+    <div style="margin-top:0.8rem; padding-top:0.6rem; border-top:1px solid #b8daff;">
+      <strong>🔧 Setup — If scripts are not installed on your machine</strong><br>
+      <span style="font-size:0.78rem; color:#444; line-height:1.8;">
+        1.&ensp;Clone the repo:&ensp;
+        <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">git clone https://github.com/uttampc1/machine-status-scripts.git</code><br>
+        2.&ensp;Follow the setup instructions in the repo's
+        <a href="https://github.com/uttampc1/machine-status-scripts" target="_blank"
+           style="color:#2c3e6b; font-weight:600;">README.md</a><br>
+      </span>
+    </div>
+
+    <div style="margin-top:0.8rem; padding-top:0.6rem; border-top: 1px solid #b8daff;">
+      <strong>Other Terminal Commands</strong><br>
+      <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">list_machines</code>
+      &nbsp;│&nbsp;
+      <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">show_machine -m &lt;name&gt;</code>
+      &nbsp;│&nbsp;
+      <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">add_machine --interactive</code>
+      &nbsp;│&nbsp;
+      <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">update_machine -m &lt;name&gt;</code>
+      &nbsp;│&nbsp;
+      <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">delete_machine -m &lt;name&gt;</code>
+    </div>
+
+  </div>
+
+  <!-- ── search / filter bar ──────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <label>🔍</label>
+    <input type="text" id="search-input" class="search-input"
+           placeholder="Search across all columns…"
+           autocomplete="off">
+    <select id="filter-status">
+      <option value="">All Status</option>
+      <option value="available">Available</option>
+      <option value="reserved">Reserved</option>
+    </select>
+    <button class="btn btn-primary" onclick="applyFilter()">Search</button>
+    <button class="btn btn-secondary" onclick="clearFilter()">Clear</button>
+    <span id="filter-count" class="filter-count"></span>
+  </div>
+  <p class="filter-hint">
+    Tip: search works instantly as you type. Press Escape to clear. Ctrl+F or / to focus.
+  </p>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       INSERT FORM MODAL
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="insert-modal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeInsertForm()">&times;</button>
+      <h2>➕ Add New Machine</h2>
+
+      <div id="form-msg" class="form-msg"></div>
+
+      <form id="insert-form" onsubmit="submitInsertForm(event)">
+
+        <!-- ── Identity ────────────────────────────────────────────────── -->
+        <div class="form-section">
+          <h3>Identity</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Machine Name <span class="req">*</span></label>
+              <input type="text" name="machine_name" required placeholder="e.g. worker-01">
+            </div>
+            <div class="form-group">
+              <label>Platform <span class="req">*</span></label>
+              <input type="text" name="platform_name" required placeholder="e.g. x86_64, aarch64">
+            </div>
+            <div class="form-group">
+              <label>IP Address</label>
+              <input type="text" name="ip_address" placeholder="e.g. 10.0.1.42">
+            </div>
+            <div class="form-group">
+              <label>BMC Name</label>
+              <input type="text" name="bmc_name" placeholder="e.g. bmc-worker-01">
+            </div>
+            <div class="form-group">
+              <label>OS</label>
+              <input type="text" name="os" placeholder="e.g. RHEL 9.3">
+            </div>
+            <div class="form-group full-width">
+              <label>Description</label>
+              <textarea name="description" placeholder="Any notes about this machine"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Inventory ───────────────────────────────────────────────── -->
+        <div class="form-section">
+          <h3>Inventory</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>PO/SMS</label>
+              <input type="text" name="po_sms" placeholder="PO number">
+            </div>
+            <div class="form-group">
+              <label>Program</label>
+              <input type="text" name="program" placeholder="e.g. KxNano">
+            </div>
+            <div class="form-group">
+              <label>Socket</label>
+              <input type="text" name="socket" placeholder="e.g. SP5">
+            </div>
+            <div class="form-group">
+              <label>System Config</label>
+              <input type="text" name="system_config" placeholder="e.g. 2P-256G">
+            </div>
+            <div class="form-group">
+              <label>Make</label>
+              <input type="text" name="make" placeholder="e.g. Supermicro">
+            </div>
+            <div class="form-group">
+              <label>Model</label>
+              <input type="text" name="model" placeholder="e.g. SYS-7739">
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <input type="text" name="category" placeholder="e.g. Server">
+            </div>
+            <div class="form-group">
+              <label>Asset Owner</label>
+              <input type="text" name="asset_owner" placeholder="e.g. Engineering">
+            </div>
+            <div class="form-group">
+              <label>Serial</label>
+              <input type="text" name="serial" placeholder="Serial number">
+            </div>
+            <div class="form-group">
+              <label>MaaS Switch</label>
+              <input type="text" name="maas_switch" placeholder="Switch name">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Infrastructure ──────────────────────────────────────────── -->
+        <div class="form-section">
+          <h3>Infrastructure</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>PDU IP</label>
+              <input type="text" name="pdu_ip" placeholder="PDU IP address">
+            </div>
+            <div class="form-group">
+              <label>PDU Port</label>
+              <input type="text" name="pdu_port" placeholder="PDU port number">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Location ────────────────────────────────────────────────── -->
+        <div class="form-section">
+          <h3>Location</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Site</label>
+              <input type="text" name="site" placeholder="e.g. Austin">
+            </div>
+            <div class="form-group">
+              <label>Lab</label>
+              <input type="text" name="lab" placeholder="e.g. Lab-A">
+            </div>
+            <div class="form-group">
+              <label>Row</label>
+              <input type="text" name="row_location" placeholder="Row identifier">
+            </div>
+            <div class="form-group">
+              <label>Rack</label>
+              <input type="text" name="rack" placeholder="Rack number">
+            </div>
+            <div class="form-group">
+              <label>RU</label>
+              <input type="text" name="ru" placeholder="Rack unit">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Hardware / Tracking ─────────────────────────────────────── -->
+        <div class="form-section">
+          <h3>Hardware / Tracking</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>CPU</label>
+              <input type="text" name="cpu" placeholder="e.g. Turin">
+            </div>
+            <div class="form-group">
+              <label>Backplane</label>
+              <input type="text" name="backplane" placeholder="Backplane type">
+            </div>
+            <div class="form-group">
+              <label>JIRA</label>
+              <input type="text" name="jira" placeholder="e.g. PROJ-1234">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Actions ─────────────────────────────────────────────────── -->
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="resetInsertForm()">Reset</button>
+          <button type="button" class="btn btn-secondary" onclick="closeInsertForm()">Cancel</button>
+          <button type="submit" class="btn btn-success" id="submit-btn">➕ Add Machine</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       DETAIL / EDIT / DELETE MODAL
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="detail-overlay" id="detail-modal">
+    <div class="detail-panel">
+      <button class="modal-close" onclick="closeDetail()">&times;</button>
+
+      <!-- ── detail message bar ─────────────────────────────────────────── -->
+      <div id="detail-msg" class="form-msg"></div>
+
+      <!-- ══ VIEW MODE ══════════════════════════════════════════════════── -->
+      <div id="detail-view" class="detail-view">
+        <h2 id="detail-machine-name"></h2>
+        <div class="detail-status" id="detail-status-badge"></div>
+
+        <!-- Identity -->
+        <div class="detail-section">
+          <h3>Identity</h3>
+          <div class="detail-grid">
+            <div class="detail-row"><span class="detail-label">Platform</span><span class="detail-value" id="dv-platform_name"></span></div>
+            <div class="detail-row"><span class="detail-label">IP Address</span><span class="detail-value" id="dv-ip_address"></span></div>
+            <div class="detail-row"><span class="detail-label">BMC Name</span><span class="detail-value" id="dv-bmc_name"></span></div>
+            <div class="detail-row"><span class="detail-label">OS</span><span class="detail-value" id="dv-os"></span></div>
+            <div class="detail-row"><span class="detail-label">Reserved By</span><span class="detail-value" id="dv-reserved_by"></span></div>
+            <div class="detail-row full-width"><span class="detail-label">Description</span><span class="detail-value" id="dv-description"></span></div>
+          </div>
+        </div>
+
+        <!-- Inventory -->
+        <div class="detail-section">
+          <h3>Inventory</h3>
+          <div class="detail-grid">
+            <div class="detail-row"><span class="detail-label">PO/SMS</span><span class="detail-value" id="dv-po_sms"></span></div>
+            <div class="detail-row"><span class="detail-label">Program</span><span class="detail-value" id="dv-program"></span></div>
+            <div class="detail-row"><span class="detail-label">Socket</span><span class="detail-value" id="dv-socket"></span></div>
+            <div class="detail-row"><span class="detail-label">Sys Config</span><span class="detail-value" id="dv-system_config"></span></div>
+            <div class="detail-row"><span class="detail-label">Make</span><span class="detail-value" id="dv-make"></span></div>
+            <div class="detail-row"><span class="detail-label">Model</span><span class="detail-value" id="dv-model"></span></div>
+            <div class="detail-row"><span class="detail-label">Category</span><span class="detail-value" id="dv-category"></span></div>
+            <div class="detail-row"><span class="detail-label">Asset Owner</span><span class="detail-value" id="dv-asset_owner"></span></div>
+            <div class="detail-row"><span class="detail-label">Serial</span><span class="detail-value" id="dv-serial"></span></div>
+            <div class="detail-row"><span class="detail-label">MaaS Switch</span><span class="detail-value" id="dv-maas_switch"></span></div>
+          </div>
+        </div>
+
+        <!-- Infrastructure -->
+        <div class="detail-section">
+          <h3>Infrastructure</h3>
+          <div class="detail-grid">
+            <div class="detail-row"><span class="detail-label">PDU IP</span><span class="detail-value" id="dv-pdu_ip"></span></div>
+            <div class="detail-row"><span class="detail-label">PDU Port</span><span class="detail-value" id="dv-pdu_port"></span></div>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="detail-section">
+          <h3>Location</h3>
+          <div class="detail-grid">
+            <div class="detail-row"><span class="detail-label">Site</span><span class="detail-value" id="dv-site"></span></div>
+            <div class="detail-row"><span class="detail-label">Lab</span><span class="detail-value" id="dv-lab"></span></div>
+            <div class="detail-row"><span class="detail-label">Row</span><span class="detail-value" id="dv-row_location"></span></div>
+            <div class="detail-row"><span class="detail-label">Rack</span><span class="detail-value" id="dv-rack"></span></div>
+            <div class="detail-row"><span class="detail-label">RU</span><span class="detail-value" id="dv-ru"></span></div>
+          </div>
+        </div>
+
+        <!-- Hardware / Tracking -->
+        <div class="detail-section">
+          <h3>Hardware / Tracking</h3>
+          <div class="detail-grid">
+            <div class="detail-row"><span class="detail-label">CPU</span><span class="detail-value" id="dv-cpu"></span></div>
+            <div class="detail-row"><span class="detail-label">Backplane</span><span class="detail-value" id="dv-backplane"></span></div>
+            <div class="detail-row"><span class="detail-label">JIRA</span><span class="detail-value" id="dv-jira"></span></div>
+          </div>
+        </div>
+
+        <!-- Timestamps -->
+        <div class="detail-section">
+          <h3>Timestamps</h3>
+          <div class="detail-grid">
+            <div class="detail-row"><span class="detail-label">Created</span><span class="detail-value" id="dv-created_at"></span></div>
+            <div class="detail-row"><span class="detail-label">Updated</span><span class="detail-value" id="dv-updated_at"></span></div>
+          </div>
+        </div>
+
+				<!-- Status Info (read-only) -->
+        <div class="detail-section">
+          <h3>Reservation Status</h3>
+          <div style="font-size:0.82rem; color:#555; line-height:1.6;">
+            <span id="detail-reserve-info"></span><br>
+            <span style="font-size:0.75rem; color:#888;">
+              To change: SSH into the machine and run
+              <code style="background:#eee; padding:0.1rem 0.4rem; border-radius:3px;">machine-reserve</code> or
+              <code style="background:#eee; padding:0.1rem 0.4rem; border-radius:3px;">machine-release</code>
+            </span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="detail-actions">
+          <button class="btn btn-primary" onclick="startEdit()">✏️ Edit</button>
+          <span class="spacer"></span>
+          <button class="btn btn-danger" onclick="confirmDelete()">🗑️ Delete</button>
+          <button class="btn btn-secondary" onclick="closeDetail()">Close</button>
+        </div>
+
+        <!-- Delete Confirmation -->
+        <div class="confirm-bar" id="delete-confirm">
+          <span class="confirm-text">Are you sure you want to delete this machine? This cannot be undone.</span>
+          <button class="btn btn-danger" onclick="doDelete()">Yes, Delete</button>
+          <button class="btn btn-secondary" onclick="cancelDelete()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- ══ EDIT MODE ══════════════════════════════════════════════════── -->
+      <div id="edit-view" class="edit-form">
+        <h2>✏️ Edit Machine</h2>
+
+        <form id="edit-form" onsubmit="submitEditForm(event)">
+
+          <div class="form-section">
+            <h3>Identity</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Machine Name <span class="req">*</span></label>
+                <input type="text" name="machine_name" required>
+              </div>
+              <div class="form-group">
+                <label>Platform <span class="req">*</span></label>
+                <input type="text" name="platform_name" required>
+              </div>
+              <div class="form-group">
+                <label>IP Address</label>
+                <input type="text" name="ip_address">
+              </div>
+              <div class="form-group">
+                <label>BMC Name</label>
+                <input type="text" name="bmc_name">
+              </div>
+              <div class="form-group">
+                <label>OS</label>
+                <input type="text" name="os">
+              </div>
+              <div class="form-group full-width">
+                <label>Description</label>
+                <textarea name="description"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Inventory</h3>
+            <div class="form-grid">
+              <div class="form-group"><label>PO/SMS</label><input type="text" name="po_sms"></div>
+              <div class="form-group"><label>Program</label><input type="text" name="program"></div>
+              <div class="form-group"><label>Socket</label><input type="text" name="socket"></div>
+              <div class="form-group"><label>System Config</label><input type="text" name="system_config"></div>
+              <div class="form-group"><label>Make</label><input type="text" name="make"></div>
+              <div class="form-group"><label>Model</label><input type="text" name="model"></div>
+              <div class="form-group"><label>Category</label><input type="text" name="category"></div>
+              <div class="form-group"><label>Asset Owner</label><input type="text" name="asset_owner"></div>
+              <div class="form-group"><label>Serial</label><input type="text" name="serial"></div>
+              <div class="form-group"><label>MaaS Switch</label><input type="text" name="maas_switch"></div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Infrastructure</h3>
+            <div class="form-grid">
+              <div class="form-group"><label>PDU IP</label><input type="text" name="pdu_ip"></div>
+              <div class="form-group"><label>PDU Port</label><input type="text" name="pdu_port"></div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Location</h3>
+            <div class="form-grid">
+              <div class="form-group"><label>Site</label><input type="text" name="site"></div>
+              <div class="form-group"><label>Lab</label><input type="text" name="lab"></div>
+              <div class="form-group"><label>Row</label><input type="text" name="row_location"></div>
+              <div class="form-group"><label>Rack</label><input type="text" name="rack"></div>
+              <div class="form-group"><label>RU</label><input type="text" name="ru"></div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Hardware / Tracking</h3>
+            <div class="form-grid">
+              <div class="form-group"><label>CPU</label><input type="text" name="cpu"></div>
+              <div class="form-group"><label>Backplane</label><input type="text" name="backplane"></div>
+              <div class="form-group"><label>JIRA</label><input type="text" name="jira"></div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
+            <button type="submit" class="btn btn-success" id="edit-submit-btn">💾 Save Changes</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── main table ───────────────────────────────────────────────────── -->
+  <div class="table-wrap">
+    <table id="machine-table">
+      <thead>
         <tr>
-            <th>ID</th><th>Name</th><th>Status</th>
-            <th>Data</th><th>Created</th><th>Updated</th>
+          <th onclick="sortTable(0)">Machine <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(1)">Platform <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(2)">IP Address <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(3)">BMC <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(4)">OS <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(5)">Status <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(6)">Reserved By <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(7)">Description <span class="sort-arrow">⇅</span></th>
+          <th class="col-sep" onclick="sortTable(8)">PO/SMS <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(9)">Program <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(10)">Socket <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(11)">Sys Config <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(12)">Make <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(13)">Model <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(14)">Category <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(15)">Asset Owner <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(16)">Serial <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(17)">MaaS Switch <span class="sort-arrow">⇅</span></th>
+          <th class="col-sep" onclick="sortTable(18)">PDU IP <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(19)">PDU Port <span class="sort-arrow">⇅</span></th>
+          <th class="col-sep" onclick="sortTable(20)">Site <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(21)">Lab <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(22)">Row <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(23)">Rack <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(24)">RU <span class="sort-arrow">⇅</span></th>
+          <th class="col-sep" onclick="sortTable(25)">CPU <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(26)">Backplane <span class="sort-arrow">⇅</span></th>
+          <th class="col-sep" onclick="sortTable(27)">JIRA <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(28)">Updated <span class="sort-arrow">⇅</span></th>
         </tr>
-        {% for r in resources %}
-        <tr>
-            <td>{{ r.id }}</td>
-            <td>{{ r.name }}</td>
-            <td>{{ r.status }}</td>
-            <td>{{ r.data }}</td>
-            <td>{{ r.created_at }}</td>
-            <td>{{ r.updated_at }}</td>
-        </tr>
-        {% endfor %}
+      </thead>
+      <tbody>
+        {% if machines %}
+          {% for m in machines %}
+          <tr>
+						<td><strong class="machine-link" onclick="showDetail('{{ m.machine_name }}')">{{ m.machine_name }}</strong></td>
+            <td>{{ m.platform_name or "" }}</td>
+            <td>{{ m.ip_address    or "" }}</td>
+            <td>{{ m.bmc_name      or "" }}</td>
+            <td>{{ m.os            or "" }}</td>
+            <td><span class="pill pill-{{ m.status }}">{{ m.status }}</span></td>
+            <td>{{ m.reserved_by   or "" }}</td>
+            <td>{{ m.description   or "" }}</td>
+            <td class="col-sep">{{ m.po_sms         or "" }}</td>
+            <td>{{ m.program       or "" }}</td>
+            <td>{{ m.socket        or "" }}</td>
+            <td>{{ m.system_config or "" }}</td>
+            <td>{{ m.make          or "" }}</td>
+            <td>{{ m.model         or "" }}</td>
+            <td>{{ m.category      or "" }}</td>
+            <td>{{ m.asset_owner   or "" }}</td>
+            <td>{{ m.serial        or "" }}</td>
+            <td>{{ m.maas_switch   or "" }}</td>
+            <td class="col-sep">{{ m.pdu_ip         or "" }}</td>
+            <td>{{ m.pdu_port      or "" }}</td>
+            <td class="col-sep">{{ m.site           or "" }}</td>
+            <td>{{ m.lab           or "" }}</td>
+            <td>{{ m.row_location  or "" }}</td>
+            <td>{{ m.rack          or "" }}</td>
+            <td>{{ m.ru            or "" }}</td>
+            <td class="col-sep">{{ m.cpu            or "" }}</td>
+            <td>{{ m.backplane     or "" }}</td>
+            <td class="col-sep">{{ m.jira           or "" }}</td>
+            <td>{{ m.updated_at }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td class="empty" colspan="29">No machines registered yet.</td></tr>
+        {% endif %}
+      </tbody>
     </table>
+  </div>
+
+  <div class="footer">
+    <span id="visible-count"></span>
+  </div>
+
+  <!-- ── JavaScript ───────────────────────────────────────────────────── -->
+  <script>
+    // ── timestamp ────────────────────────────────────────────────────────
+    document.getElementById("ts").textContent = new Date().toLocaleString();
+
+    // ── auto-refresh ─────────────────────────────────────────────────────
+    let refreshTimer = null;
+    const refreshSelect = document.getElementById("auto-refresh");
+
+    function setAutoRefresh() {
+      if (refreshTimer) clearInterval(refreshTimer);
+      const secs = parseInt(refreshSelect.value);
+      if (secs > 0) {
+        refreshTimer = setInterval(() => location.reload(), secs * 1000);
+      }
+    }
+    refreshSelect.addEventListener("change", setAutoRefresh);
+    setAutoRefresh();
+
+    // ── store original cell data ─────────────────────────────────────────
+    const tableBody = document.querySelector("#machine-table tbody");
+    let allRows     = Array.from(tableBody.querySelectorAll("tr")).filter(
+      r => !r.querySelector(".empty")
+    );
+    let originalData = allRows.map(row =>
+      Array.from(row.cells).map(cell => ({
+        text: cell.textContent,
+        html: cell.innerHTML
+      }))
+    );
+
+    // ── search / filter ──────────────────────────────────────────────────
+    const searchInput   = document.getElementById("search-input");
+    const filterStatus  = document.getElementById("filter-status");
+    const filterCount   = document.getElementById("filter-count");
+    const visibleCount  = document.getElementById("visible-count");
+
+    function escapeRegex(str) {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function highlightText(text, searchTerm) {
+      if (!searchTerm) return text;
+      const regex = new RegExp('(' + escapeRegex(searchTerm) + ')', 'gi');
+      return text.replace(regex, '<mark>$1</mark>');
+    }
+
+    function applyFilter() {
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      const status     = filterStatus.value.toLowerCase();
+      let shown = 0;
+
+      allRows.forEach((row, rowIndex) => {
+        const cellData   = originalData[rowIndex];
+        const allText    = cellData.map(c => c.text.toLowerCase()).join(" ");
+        const rowStatus  = cellData[5].text.toLowerCase().trim();
+
+        const textMatch   = !searchTerm || allText.includes(searchTerm);
+        const statusMatch = !status     || rowStatus === status;
+
+        if (textMatch && statusMatch) {
+          row.classList.remove("hidden");
+          shown++;
+
+          if (searchTerm) {
+            Array.from(row.cells).forEach((cell, cellIndex) => {
+              const original = cellData[cellIndex];
+              if (cellIndex === 5) { cell.innerHTML = original.html; return; }
+              const cellText = original.text;
+              if (cellText.toLowerCase().includes(searchTerm)) {
+                cell.innerHTML = highlightText(cellText, searchTerm);
+              } else {
+                cell.innerHTML = original.html;
+              }
+            });
+          } else {
+            Array.from(row.cells).forEach((cell, cellIndex) => {
+              cell.innerHTML = originalData[rowIndex][cellIndex].html;
+            });
+          }
+        } else {
+          row.classList.add("hidden");
+          Array.from(row.cells).forEach((cell, cellIndex) => {
+            cell.innerHTML = originalData[rowIndex][cellIndex].html;
+          });
+        }
+      });
+
+      const total = allRows.length;
+      if (searchTerm || status) {
+        filterCount.textContent = `Showing ${shown} of ${total}`;
+      } else {
+        filterCount.textContent = "";
+      }
+      visibleCount.textContent = `${shown} machine(s) displayed`;
+    }
+
+    function clearFilter() {
+      searchInput.value  = "";
+      filterStatus.value = "";
+      applyFilter();
+      searchInput.focus();
+    }
+
+    searchInput.addEventListener("input", applyFilter);
+    filterStatus.addEventListener("change", applyFilter);
+    searchInput.addEventListener("keyup", function(e) {
+      if (e.key === "Escape") clearFilter();
+    });
+    applyFilter();
+
+    // ── column sorting ───────────────────────────────────────────────────
+    let sortCol = -1;
+    let sortAsc = true;
+
+		    function sortTable(colIndex) {
+      if (sortCol === colIndex) {
+        sortAsc = !sortAsc;
+      } else {
+        sortCol = colIndex;
+        sortAsc = true;
+      }
+
+      const paired = allRows.map((row, i) => ({ row, data: originalData[i] }));
+
+      paired.sort((a, b) => {
+        const aText = a.data[colIndex].text.trim().toLowerCase();
+        const bText = b.data[colIndex].text.trim().toLowerCase();
+
+        const aNum = parseFloat(aText);
+        const bNum = parseFloat(bText);
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return sortAsc ? aNum - bNum : bNum - aNum;
+        }
+
+        if (!aText && bText) return 1;
+        if (aText && !bText) return -1;
+
+        if (aText < bText) return sortAsc ? -1 : 1;
+        if (aText > bText) return sortAsc ? 1 : -1;
+        return 0;
+      });
+
+      paired.forEach((p, i) => {
+        tableBody.appendChild(p.row);
+        originalData[i] = p.data;
+        allRows[i]      = p.row;
+      });
+
+      applyFilter();
+
+      const ths = document.querySelectorAll("#machine-table th .sort-arrow");
+      ths.forEach((arrow, i) => {
+        arrow.textContent = (i === colIndex) ? (sortAsc ? "▲" : "▼") : "⇅";
+      });
+    }
+
+    // keyboard shortcut
+    document.addEventListener("keydown", function(e) {
+      if ((e.ctrlKey && e.key === "f") || (e.key === "/" && document.activeElement.tagName !== "INPUT")) {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+    });
+
+    // ── insert form modal ────────────────────────────────────────────────
+    const insertModal = document.getElementById("insert-modal");
+    const insertForm  = document.getElementById("insert-form");
+    const formMsg     = document.getElementById("form-msg");
+
+    function openInsertForm() {
+      formMsg.className = "form-msg";
+      formMsg.textContent = "";
+      insertModal.classList.add("active");
+      // focus first input
+      insertForm.querySelector('input[name="machine_name"]').focus();
+    }
+
+    function closeInsertForm() {
+      insertModal.classList.remove("active");
+    }
+
+    function resetInsertForm() {
+      insertForm.reset();
+      formMsg.className = "form-msg";
+      formMsg.textContent = "";
+    }
+
+    // close modal on Escape
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape" && insertModal.classList.contains("active")) {
+        closeInsertForm();
+      }
+    });
+
+    // close modal on overlay click (not on modal itself)
+    insertModal.addEventListener("click", function(e) {
+      if (e.target === insertModal) {
+        closeInsertForm();
+      }
+    });
+
+    async function submitInsertForm(event) {
+      event.preventDefault();
+
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+
+      // collect form data into JSON
+      const formData = new FormData(insertForm);
+      const payload = {};
+
+      for (const [key, value] of formData.entries()) {
+        const trimmed = value.trim();
+        if (trimmed) {
+          payload[key] = trimmed;
+        }
+      }
+
+      // validate required fields
+      if (!payload.machine_name || !payload.platform_name) {
+        formMsg.className = "form-msg error";
+        formMsg.textContent = "Machine Name and Platform are required.";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "➕ Add Machine";
+        return;
+      }
+
+      try {
+        const response = await fetch("/machines", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          formMsg.className = "form-msg success";
+          formMsg.textContent = `✓ ${result.message || "Machine added successfully!"}`;
+
+          // reload page after short delay so user sees the success message
+          setTimeout(() => {
+            location.reload();
+          }, 1200);
+        } else {
+          formMsg.className = "form-msg error";
+          formMsg.textContent = `✗ ${result.error || "Failed to add machine."}`;
+          submitBtn.disabled = false;
+          submitBtn.textContent = "➕ Add Machine";
+        }
+      } catch (err) {
+        formMsg.className = "form-msg error";
+        formMsg.textContent = `✗ Network error: ${err.message}`;
+        submitBtn.disabled = false;
+        submitBtn.textContent = "➕ Add Machine";
+      }
+    }
+
+	  // ── detail / edit / delete ───────────────────────────────────────────
+    const detailModal   = document.getElementById("detail-modal");
+    const detailView    = document.getElementById("detail-view");
+    const editView      = document.getElementById("edit-view");
+    const detailMsg     = document.getElementById("detail-msg");
+
+    // all fields we display in detail view
+    const DETAIL_FIELDS = [
+      'platform_name','ip_address','bmc_name','os','reserved_by','description',
+      'po_sms','program','socket','system_config','make','model','category',
+      'asset_owner','serial','maas_switch','pdu_ip','pdu_port',
+      'site','lab','row_location','rack','ru','cpu','backplane','jira',
+      'created_at','updated_at'
+    ];
+
+    // all fields in the edit form
+    const EDIT_FIELDS = [
+      'machine_name','platform_name','ip_address','bmc_name','os','description',
+      'po_sms','program','socket','system_config','make','model','category',
+      'asset_owner','serial','maas_switch','pdu_ip','pdu_port',
+      'site','lab','row_location','rack','ru','cpu','backplane','jira'
+    ];
+
+    let currentMachine = null;   // holds the full machine object
+    let currentMachineName = ''; // the name used in the URL (in case of rename)
+
+    // ── fetch one machine from API ───────────────────────────────────────
+    async function fetchMachine(name) {
+      const resp = await fetch('/machines', {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const machines = await resp.json();
+      return machines.find(m => m.machine_name === name) || null;
+    }
+
+    // ── show detail modal ────────────────────────────────────────────────
+    async function showDetail(name) {
+      detailMsg.className = 'form-msg';
+      detailMsg.textContent = '';
+
+      try {
+        const machine = await fetchMachine(name);
+        if (!machine) {
+          alert(`Machine '${name}' not found.`);
+          return;
+        }
+
+        currentMachine = machine;
+        currentMachineName = machine.machine_name;
+
+        // populate header
+        document.getElementById('detail-machine-name').textContent = machine.machine_name;
+
+        // status badge
+        const statusBadge = document.getElementById('detail-status-badge');
+        statusBadge.innerHTML = `<span class="pill pill-${machine.status}">${machine.status}</span>`;
+        if (machine.status === 'reserved' && machine.reserved_by) {
+          statusBadge.innerHTML += ` <span style="font-size:0.8rem; color:#856404; margin-left:0.5rem;">by ${machine.reserved_by}</span>`;
+        }
+
+				// reservation info (read-only)
+        const reserveInfo = document.getElementById('detail-reserve-info');
+        if (machine.status === 'reserved') {
+          reserveInfo.innerHTML = `This machine is <strong style="color:#856404;">reserved</strong>` +
+            (machine.reserved_by ? ` by <strong>${machine.reserved_by}</strong>` : '') + '.';
+        } else {
+          reserveInfo.innerHTML = `This machine is <strong style="color:#155724;">available</strong>.`;
+        }
+
+        // populate detail fields
+        DETAIL_FIELDS.forEach(field => {
+          const el = document.getElementById('dv-' + field);
+          if (el) {
+            const val = machine[field];
+            if (val) {
+              el.textContent = val;
+              el.classList.remove('empty');
+            } else {
+              el.textContent = '—';
+              el.classList.add('empty');
+            }
+          }
+        });
+
+        // reset delete confirm
+        document.getElementById('delete-confirm').classList.remove('active');
+
+        // show detail view, hide edit view
+        detailView.classList.remove('hidden');
+        editView.classList.remove('active');
+
+        detailModal.classList.add('active');
+
+      } catch (err) {
+        alert(`Error loading machine: ${err.message}`);
+      }
+    }
+
+    function closeDetail() {
+      detailModal.classList.remove('active');
+      currentMachine = null;
+      currentMachineName = '';
+    }
+
+    // close on Escape or overlay click
+    detailModal.addEventListener("click", function(e) {
+      if (e.target === detailModal) closeDetail();
+    });
+
+    // ── edit mode ────────────────────────────────────────────────────────
+    function startEdit() {
+      if (!currentMachine) return;
+
+      // populate edit form with current values
+      const form = document.getElementById('edit-form');
+      EDIT_FIELDS.forEach(field => {
+        const input = form.querySelector(`[name="${field}"]`);
+        if (input) {
+          if (input.tagName === 'TEXTAREA') {
+            input.value = currentMachine[field] || '';
+          } else {
+            input.value = currentMachine[field] || '';
+          }
+        }
+      });
+
+      detailView.classList.add('hidden');
+      editView.classList.add('active');
+      detailMsg.className = 'form-msg';
+      detailMsg.textContent = '';
+    }
+
+    function cancelEdit() {
+      editView.classList.remove('active');
+      detailView.classList.remove('hidden');
+    }
+
+    async function submitEditForm(event) {
+      event.preventDefault();
+
+      const submitBtn = document.getElementById('edit-submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
+
+      const form = document.getElementById('edit-form');
+      const formData = new FormData(form);
+      const payload = {};
+
+      // only include fields that changed
+      for (const [key, value] of formData.entries()) {
+        const trimmed = value.trim();
+        const original = currentMachine[key] || '';
+
+        if (trimmed !== original) {
+          payload[key] = trimmed || null;  // send null to clear a field
+        }
+      }
+
+      if (Object.keys(payload).length === 0) {
+        detailMsg.className = 'form-msg error';
+        detailMsg.textContent = 'No changes detected.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = '💾 Save Changes';
+        return;
+      }
+
+      try {
+        const resp = await fetch(`/machines/${encodeURIComponent(currentMachineName)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await resp.json();
+
+        if (resp.ok) {
+          detailMsg.className = 'form-msg success';
+          detailMsg.textContent = `✓ ${result.message || 'Machine updated!'}`;
+          setTimeout(() => location.reload(), 1200);
+        } else {
+          detailMsg.className = 'form-msg error';
+          detailMsg.textContent = `✗ ${result.error || 'Update failed.'}`;
+          submitBtn.disabled = false;
+          submitBtn.textContent = '💾 Save Changes';
+        }
+      } catch (err) {
+        detailMsg.className = 'form-msg error';
+        detailMsg.textContent = `✗ Network error: ${err.message}`;
+        submitBtn.disabled = false;
+        submitBtn.textContent = '💾 Save Changes';
+      }
+    }
+
+    // ── delete ───────────────────────────────────────────────────────────
+    function confirmDelete() {
+      document.getElementById('delete-confirm').classList.add('active');
+    }
+
+    function cancelDelete() {
+      document.getElementById('delete-confirm').classList.remove('active');
+    }
+
+    async function doDelete() {
+      if (!currentMachineName) return;
+
+      try {
+        const resp = await fetch(`/machines/${encodeURIComponent(currentMachineName)}?force=true`, {
+          method: 'DELETE'
+        });
+        const result = await resp.json();
+
+        if (resp.ok) {
+          detailMsg.className = 'form-msg success';
+          detailMsg.textContent = `✓ Machine '${currentMachineName}' deleted.`;
+          document.getElementById('delete-confirm').classList.remove('active');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          detailMsg.className = 'form-msg error';
+          detailMsg.textContent = `✗ ${result.error || 'Delete failed.'}`;
+          cancelDelete();
+        }
+      } catch (err) {
+        detailMsg.className = 'form-msg error';
+        detailMsg.textContent = `✗ Network error: ${err.message}`;
+        cancelDelete();
+      }
+    }
+  </script>
 </body>
 </html>

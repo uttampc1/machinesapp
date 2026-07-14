@@ -14,6 +14,26 @@ UPDATABLE_FIELDS = {
     "description",
     "status",
     "reserved_by",
+    "po_sms",
+    "program",
+    "socket",
+    "system_config",
+    "make",
+    "model",
+    "category",
+    "asset_owner",
+    "serial",
+    "maas_switch",
+    "pdu_ip",
+    "pdu_port",
+    "site",
+    "lab",
+    "row_location",
+    "rack",
+    "ru",
+    "cpu",
+    "backplane",
+    "jira",
 }
 
 # Columns shown in the terminal table and their headers
@@ -25,6 +45,26 @@ COLUMNS = [
     ("os",            "OS"),
     ("status",        "STATUS"),
     ("reserved_by",   "RESERVED BY"),
+    ("po_sms",        "PO/SMS"),
+    ("program",       "PROGRAM"),
+    ("socket",        "SOCKET"),
+    ("system_config", "SYS CONFIG"),
+    ("make",          "MAKE"),
+    ("model",         "MODEL"),
+    ("category",      "CATEGORY"),
+    ("asset_owner",   "ASSET OWNER"),
+    ("serial",        "SERIAL"),
+    ("maas_switch",   "MAAS SWITCH"),
+    ("pdu_ip",        "PDU IP"),
+    ("pdu_port",      "PDU PORT"),
+    ("site",          "SITE"),
+    ("lab",           "LAB"),
+    ("row_location",  "ROW"),
+    ("rack",          "RACK"),
+    ("ru",            "RU"),
+    ("cpu",           "CPU"),
+    ("backplane",     "BACKPLANE"),
+    ("jira",          "JIRA"),
     ("description",   "DESCRIPTION"),
 ]
 
@@ -66,6 +106,19 @@ def _wants_text(req):
 
     return False    # default: JSON
 
+# ── input sanitizer (if not already in app.py) ─────────────────────────────────
+
+def clean(value):
+    """
+    Strip whitespace from strings.
+    Return None for empty/whitespace-only strings and actual None.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        return stripped if stripped else None
+    return value
 
 # ── LIST  ─────────────────────────────────────────────────────────────────────
 # GET /machines
@@ -103,6 +156,7 @@ def list_machines():
 @app.route("/machines", methods=["POST"])
 def insert_machine():
     data = request.get_json(silent=True) or {}
+    data = {k: clean(v) for k, v in data.items()}
 
     missing = [f for f in ("machine_name", "platform_name") if not data.get(f)]
     if missing:
@@ -112,9 +166,12 @@ def insert_machine():
     try:
         conn.execute("""
             INSERT INTO machines
-                (machine_name, platform_name, ip_address,
-                 bmc_name, os, description, status, reserved_by)
-            VALUES (?, ?, ?, ?, ?, ?, 'available', NULL)
+                (machine_name, platform_name, ip_address, bmc_name, os, description,
+                 po_sms, program, socket, system_config, make, model, category,
+                 asset_owner, serial, maas_switch, pdu_ip, pdu_port,
+                 site, lab, row_location, rack, ru, cpu, backplane, jira,
+                 status, reserved_by)
+            VALUES (?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?,?,?,?, 'available', NULL)
         """, (
             data["machine_name"],
             data["platform_name"],
@@ -122,6 +179,26 @@ def insert_machine():
             data.get("bmc_name"),
             data.get("os"),
             data.get("description"),
+            data.get("po_sms"),
+            data.get("program"),
+            data.get("socket"),
+            data.get("system_config"),
+            data.get("make"),
+            data.get("model"),
+            data.get("category"),
+            data.get("asset_owner"),
+            data.get("serial"),
+            data.get("maas_switch"),
+            data.get("pdu_ip"),
+            data.get("pdu_port"),
+            data.get("site"),
+            data.get("lab"),
+            data.get("row_location"),
+            data.get("rack"),
+            data.get("ru"),
+            data.get("cpu"),
+            data.get("backplane"),
+            data.get("jira"),
         ))
         conn.commit()
     except Exception as e:
@@ -140,6 +217,9 @@ def insert_machine():
 @app.route("/machines/<current_name>", methods=["PUT"])
 def update_machine(current_name):
     data = request.get_json(silent=True) or {}
+
+    # clean every incoming value
+    data = {k: clean(v) for k, v in data.items()}
 
     # collect only recognised fields the caller actually sent
     updates = {k: v for k, v in data.items() if k in UPDATABLE_FIELDS}
