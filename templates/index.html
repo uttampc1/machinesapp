@@ -249,7 +249,7 @@
     td:nth-child(3) { max-width: 110px; }  /* IP */
     td:nth-child(4) { max-width: 100px; }  /* BMC */
     td:nth-child(5) { max-width: 80px; }   /* OS */
-    td:nth-child(6) { max-width: 70px; }   /* status */
+    td:nth-child(6) { max-width: 80px; }   /* status */
     td:nth-child(7) { max-width: 90px; }   /* reserved by */
     td:nth-child(8) { max-width: 120px; }  /* description */
     td:nth-child(9) { max-width: 90px; }   /* PO/SMS */
@@ -972,29 +972,29 @@
           <th onclick="sortTable(5)">Status <span class="sort-arrow">⇅</span></th>
           <th onclick="sortTable(6)">Reserved By <span class="sort-arrow">⇅</span></th>
           <th onclick="sortTable(7)">Description <span class="sort-arrow">⇅</span></th>
-          <th class="col-sep" onclick="sortTable(8)">PO/SMS <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(9)">Program <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(10)">Socket <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(11)">Sys Config <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(12)">Make <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(13)">Model <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(14)">Category <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(15)">Asset Owner <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(16)">Serial <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(17)">MaaS Switch <span class="sort-arrow">⇅</span></th>
-          <th class="col-sep" onclick="sortTable(18)">PDU IP <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(19)">PDU Port <span class="sort-arrow">⇅</span></th>
-          <th class="col-sep" onclick="sortTable(20)">Site <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(21)">Lab <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(22)">Row <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(23)">Rack <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(24)">RU <span class="sort-arrow">⇅</span></th>
-          <th class="col-sep" onclick="sortTable(25)">CPU <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(26)">Backplane <span class="sort-arrow">⇅</span></th>
-          <th class="col-sep" onclick="sortTable(27)">JIRA <span class="sort-arrow">⇅</span></th>
-					<th onclick="sortTable(28)">Box ID <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(29)">Current Project <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(30)">Team <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(8)">Team <span class="sort-arrow">⇅</span></th>
+          <th class="col-sep" onclick="sortTable(9)">PO/SMS <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(10)">Program <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(11)">Socket <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(12)">Sys Config <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(13)">Make <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(14)">Model <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(15)">Category <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(16)">Asset Owner <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(17)">Serial <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(18)">MaaS Switch <span class="sort-arrow">⇅</span></th>
+          <th class="col-sep" onclick="sortTable(19)">PDU IP <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(20)">PDU Port <span class="sort-arrow">⇅</span></th>
+          <th class="col-sep" onclick="sortTable(21)">Site <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(22)">Lab <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(23)">Row <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(24)">Rack <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(25)">RU <span class="sort-arrow">⇅</span></th>
+          <th class="col-sep" onclick="sortTable(26)">CPU <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(27)">Backplane <span class="sort-arrow">⇅</span></th>
+          <th class="col-sep" onclick="sortTable(28)">JIRA <span class="sort-arrow">⇅</span></th>
+					<th onclick="sortTable(29)">Box ID <span class="sort-arrow">⇅</span></th>
+          <th onclick="sortTable(30)">Current Project <span class="sort-arrow">⇅</span></th>
           <th onclick="sortTable(31)">Updated <span class="sort-arrow">⇅</span></th>
         </tr>
       </thead>
@@ -1010,6 +1010,7 @@
             <td><span class="pill pill-{{ m.status }}">{{ m.status }}</span></td>
             <td>{{ m.reserved_by   or "" }}</td>
             <td>{{ m.description   or "" }}</td>
+            <td>{{ m.team   or "" }}</td>
             <td class="col-sep">{{ m.po_sms         or "" }}</td>
             <td>{{ m.program       or "" }}</td>
             <td>{{ m.socket        or "" }}</td>
@@ -1032,7 +1033,6 @@
             <td class="col-sep">{{ m.jira           or "" }}</td>
 						<td>{{ m.box_id          or "" }}</td>
             <td>{{ m.current_project or "" }}</td>
-            <td>{{ m.team   or "" }}</td>
             <td>{{ m.updated_at }}</td>
           </tr>
           {% endfor %}
@@ -1099,17 +1099,17 @@
 
         var fields = [
           'machine_name','platform_name','ip_address','bmc_name','os',
-          'status','reserved_by','description',
+          'status','reserved_by','description','team',
           'po_sms','program','socket','system_config','make','model',
           'category','asset_owner','serial','maas_switch',
           'pdu_ip','pdu_port',
           'site','lab','row_location','rack','ru',
           'cpu','backplane',
-          'jira','box_id','current_project','team','updated_at'
+          'jira','box_id','current_project','updated_at'
         ];
 
         // columns that get col-sep class
-        var sepCols = [8, 18, 20, 25, 27, 31];
+        var sepCols = [9, 19, 21, 26, 28];
 
         machines.forEach(function(m) {
           var tr = document.createElement('tr');
@@ -1654,7 +1654,7 @@
     function buildTeamBadges() {
       // collect unique team values from originalData
       var teamSet = {};
-      var teamCol = -1;
+      var teamCol = 8;
 
       // find team column index — it's the one before "Updated"
       var headers = document.querySelectorAll('#machine-table th');
