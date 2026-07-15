@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Machine Inventory</title>
   <style>
+    /* hide extra columns by default (prevents flash on load) */
+    .col-extra { display: none; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-		  font-family: "Segoe UI", Arial, sans-serif;
+      font-family: "Segoe UI", Arial, sans-serif;
       background: #f4f6f9;
       color: #333;
       padding: 1rem;
@@ -198,22 +200,22 @@
 
     /* ── table ──────────────────────────────────────────────────────────── */
     .table-wrap {
-	    overflow: auto;
+      overflow: auto;
       max-height: 75vh;
       max-width: 100%;
-		  border: 1px solid #ddd;
+      border: 1px solid #ddd;
       border-radius: 8px;
     }
 
     table {
-	    width: max-content;
+      width: max-content;
       border-collapse: separate;
       border-spacing: 0;
       background: #fff;
       font-size: 0.7rem;
     }
     th {
-	    background: #2c3e6b;
+      background: #2c3e6b;
       color: #fff;
       padding: 0.35rem 0.5rem;
       text-align: left;
@@ -230,15 +232,48 @@
     th:hover { background: #1a2a4a; }
     th .sort-arrow { font-size: 0.55rem; margin-left: 0.2rem; }
     td {
-	    padding: 0.3rem 0.5rem;
+      padding: 0.3rem 0.5rem;
       border-bottom: 1px solid #eee;
-      vertical-align: middle;
+      vertical-align: top;
+      font-size: 0.7rem;
+    }
+
+    /* default: nowrap with ellipsis */
+    .view-all td {
       white-space: nowrap;
       max-width: 150px;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: 0.7rem;
     }
+
+    /* minimal view: allow wrapping on key columns */
+    .view-minimal td {
+      white-space: nowrap;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .view-minimal td.wrap-col {
+      white-space: normal;
+      word-break: break-word;
+      max-width: 300px;
+      overflow: visible;
+    }
+
+    /* hover expand for all-columns view */
+    .view-all td:hover {
+      overflow: visible;
+      white-space: nowrap;
+      position: relative;
+      z-index: 1;
+      background: #fff;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.15);
+    }
+
+    /* hidden columns in minimal view */
+    .view-minimal .col-extra { display: none; }
+    .view-minimal th.col-extra { display: none; }
+
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: #f0f4ff; }
     tr.hidden { display: none; }
@@ -327,7 +362,7 @@
       color: #888;
     }
 
-	  /* ── detail modal ───────────────────────────────────────────────────── */
+    /* ── detail modal ───────────────────────────────────────────────────── */
     .detail-overlay {
       display: none;
       position: fixed;
@@ -487,6 +522,10 @@
     <button class="btn btn-success" onclick="openInsertForm()" style="margin-left:1rem;">
       ＋ Add Machine
     </button>
+    <label style="margin-left:1rem; font-size:0.78rem; cursor:pointer; user-select:none;">
+      <input type="checkbox" id="view-toggle-cb" onchange="toggleView()" style="cursor:pointer;">
+      Show all columns
+    </label>
   </div>
 
   <!-- team filter badges -->
@@ -524,7 +563,7 @@
         <code>wall</code>, and update this inventory database.
       </span><br>
       <span style="font-size:1.0rem; padding:0.1rem; color:#2c3e6b; font-weight:600; background:#fa8072; border-radius:3px">
-        NOTE: The machine itself is the source of truth for reservation status and availability. Please communicate.
+        NOTE: The machine itself is the source of truth for reservation status and availability.
       </span>
     </div>
 
@@ -710,7 +749,7 @@
         </div>
 
         <!-- ── Hardware / Tracking ─────────────────────────────────────── -->
-				<div class="form-section">
+        <div class="form-section">
           <h3>Hardware / Tracking</h3>
           <div class="form-grid">
             <div class="form-group">
@@ -834,7 +873,7 @@
           </div>
         </div>
 
-				<!-- Status Info (read-only) -->
+        <!-- Status Info (read-only) -->
         <div class="detail-section">
           <h3>Reservation Status</h3>
           <div style="font-size:0.82rem; color:#555; line-height:1.6;">
@@ -896,10 +935,10 @@
                 <label>Description</label>
                 <textarea name="description"></textarea>
               </div>
-							 <div class="form-group">
-							   <label>Team</label>
-								 <input type="text" name="team">
-							 </div>
+               <div class="form-group">
+                 <label>Team</label>
+                 <input type="text" name="team">
+               </div>
             </div>
           </div>
 
@@ -973,28 +1012,28 @@
           <th onclick="sortTable(6)">Reserved By <span class="sort-arrow">⇅</span></th>
           <th onclick="sortTable(7)">Description <span class="sort-arrow">⇅</span></th>
           <th onclick="sortTable(8)">Team <span class="sort-arrow">⇅</span></th>
-          <th class="col-sep" onclick="sortTable(9)">PO/SMS <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(10)">Program <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(11)">Socket <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(12)">Sys Config <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(13)">Make <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(14)">Model <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(15)">Category <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(16)">Asset Owner <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(17)">Serial <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(18)">MaaS Switch <span class="sort-arrow">⇅</span></th>
-          <th class="col-sep" onclick="sortTable(19)">PDU IP <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(20)">PDU Port <span class="sort-arrow">⇅</span></th>
-          <th class="col-sep" onclick="sortTable(21)">Site <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(22)">Lab <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(23)">Row <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(24)">Rack <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(25)">RU <span class="sort-arrow">⇅</span></th>
-          <th class="col-sep" onclick="sortTable(26)">CPU <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(27)">Backplane <span class="sort-arrow">⇅</span></th>
-          <th class="col-sep" onclick="sortTable(28)">JIRA <span class="sort-arrow">⇅</span></th>
-					<th onclick="sortTable(29)">Box ID <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(30)">Current Project <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra col-sep" onclick="sortTable(9)">PO/SMS <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(10)">Program <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(11)">Socket <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(12)">Sys Config <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(13)">Make <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(14)">Model <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(15)">Category <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(16)">Asset Owner <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(17)">Serial <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(18)">MaaS Switch <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra col-sep" onclick="sortTable(19)">PDU IP <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(20)">PDU Port <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra col-sep" onclick="sortTable(21)">Site <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(22)">Lab <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(23)">Row <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(24)">Rack <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(25)">RU <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra col-sep" onclick="sortTable(26)">CPU <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(27)">Backplane <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra col-sep" onclick="sortTable(28)">JIRA <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(29)">Box ID <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(30)">Current Project <span class="sort-arrow">⇅</span></th>
           <th onclick="sortTable(31)">Updated <span class="sort-arrow">⇅</span></th>
         </tr>
       </thead>
@@ -1002,37 +1041,37 @@
         {% if machines %}
           {% for m in machines %}
           <tr>
-						<td><strong class="machine-link" onclick="showDetail('{{ m.machine_name }}')">{{ m.machine_name }}</strong></td>
+            <td><strong class="machine-link" onclick="showDetail('{{ m.machine_name }}')">{{ m.machine_name }}</strong></td>
             <td>{{ m.platform_name or "" }}</td>
             <td>{{ m.ip_address    or "" }}</td>
             <td>{{ m.bmc_name      or "" }}</td>
             <td>{{ m.os            or "" }}</td>
             <td><span class="pill pill-{{ m.status }}">{{ m.status }}</span></td>
             <td>{{ m.reserved_by   or "" }}</td>
-            <td>{{ m.description   or "" }}</td>
-            <td>{{ m.team   or "" }}</td>
-            <td class="col-sep">{{ m.po_sms         or "" }}</td>
-            <td>{{ m.program       or "" }}</td>
-            <td>{{ m.socket        or "" }}</td>
-            <td>{{ m.system_config or "" }}</td>
-            <td>{{ m.make          or "" }}</td>
-            <td>{{ m.model         or "" }}</td>
-            <td>{{ m.category      or "" }}</td>
-            <td>{{ m.asset_owner   or "" }}</td>
-            <td>{{ m.serial        or "" }}</td>
-            <td>{{ m.maas_switch   or "" }}</td>
-            <td class="col-sep">{{ m.pdu_ip         or "" }}</td>
-            <td>{{ m.pdu_port      or "" }}</td>
-            <td class="col-sep">{{ m.site           or "" }}</td>
-            <td>{{ m.lab           or "" }}</td>
-            <td>{{ m.row_location  or "" }}</td>
-            <td>{{ m.rack          or "" }}</td>
-            <td>{{ m.ru            or "" }}</td>
-            <td class="col-sep">{{ m.cpu            or "" }}</td>
-            <td>{{ m.backplane     or "" }}</td>
-            <td class="col-sep">{{ m.jira           or "" }}</td>
-						<td>{{ m.box_id          or "" }}</td>
-            <td>{{ m.current_project or "" }}</td>
+            <td class="wrap-col">{{ m.description   or "" }}</td>
+            <td>{{ m.team          or "" }}</td>
+            <td class="col-extra col-sep">{{ m.po_sms         or "" }}</td>
+            <td class="col-extra">{{ m.program       or "" }}</td>
+            <td class="col-extra">{{ m.socket        or "" }}</td>
+            <td class="col-extra">{{ m.system_config or "" }}</td>
+            <td class="col-extra">{{ m.make          or "" }}</td>
+            <td class="col-extra">{{ m.model         or "" }}</td>
+            <td class="col-extra">{{ m.category      or "" }}</td>
+            <td class="col-extra">{{ m.asset_owner   or "" }}</td>
+            <td class="col-extra">{{ m.serial        or "" }}</td>
+            <td class="col-extra">{{ m.maas_switch   or "" }}</td>
+            <td class="col-extra col-sep">{{ m.pdu_ip         or "" }}</td>
+            <td class="col-extra">{{ m.pdu_port      or "" }}</td>
+            <td class="col-extra col-sep">{{ m.site           or "" }}</td>
+            <td class="col-extra">{{ m.lab           or "" }}</td>
+            <td class="col-extra">{{ m.row_location  or "" }}</td>
+            <td class="col-extra">{{ m.rack          or "" }}</td>
+            <td class="col-extra">{{ m.ru            or "" }}</td>
+            <td class="col-extra col-sep">{{ m.cpu            or "" }}</td>
+            <td class="col-extra">{{ m.backplane     or "" }}</td>
+            <td class="col-extra col-sep">{{ m.jira           or "" }}</td>
+            <td class="col-extra">{{ m.box_id        or "" }}</td>
+            <td class="col-extra">{{ m.current_project or "" }}</td>
             <td>{{ m.updated_at }}</td>
           </tr>
           {% endfor %}
@@ -1055,7 +1094,7 @@
     // ── auto-refresh ─────────────────────────────────────────────────────
     let refreshTimer = null;
     const refreshSelect = document.getElementById("auto-refresh");
-		function refreshData() {
+    function refreshData() {
       fetch('/machines', {
         headers: { 'Accept': 'application/json' }
       })
@@ -1082,7 +1121,6 @@
           if (b.classList.contains('badge-reserved')) b.textContent = 'Reserved: ' + reserved;
         });
 
-        // update timestamp
         document.getElementById("ts").textContent = new Date().toLocaleString();
 
         // rebuild table body
@@ -1093,7 +1131,6 @@
           tbody.innerHTML = '<tr><td class="empty-row" colspan="32">No machines registered yet.</td></tr>';
           allRows = [];
           originalData = [];
-          applyFilter();
           return;
         }
 
@@ -1108,8 +1145,8 @@
           'jira','box_id','current_project','updated_at'
         ];
 
-        // columns that get col-sep class
         var sepCols = [9, 19, 21, 26, 28];
+        var extraCols = [9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
 
         machines.forEach(function(m) {
           var tr = document.createElement('tr');
@@ -1118,19 +1155,24 @@
             var td = document.createElement('td');
             var val = m[field] || '';
 
-            if (sepCols.indexOf(colIdx) !== -1) {
-              td.className = 'col-sep';
+            var classes = [];
+            if (sepCols.indexOf(colIdx) !== -1) classes.push('col-sep');
+            if (extraCols.indexOf(colIdx) !== -1) classes.push('col-extra');
+            if (colIdx === 7) classes.push('wrap-col');
+            if (classes.length > 0) td.className = classes.join(' ');
+
+            // set display based on current view state
+            if (extraCols.indexOf(colIdx) !== -1) {
+              td.style.display = isAllColumns ? 'table-cell' : 'none';
             }
 
             if (colIdx === 0) {
-              // machine name — clickable link
               var strong = document.createElement('strong');
               strong.className = 'machine-link';
               strong.textContent = val;
               strong.setAttribute('onclick', "showDetail('" + val.replace(/'/g, "\\'") + "')");
               td.appendChild(strong);
             } else if (colIdx === 5) {
-              // status pill
               var span = document.createElement('span');
               span.className = 'pill pill-' + val;
               span.textContent = val;
@@ -1145,18 +1187,16 @@
           tbody.appendChild(tr);
         });
 
-        // rebuild allRows and originalData
-        allRows = Array.from(tbody.querySelectorAll("tr")).filter(
-          function(r) { return !r.querySelector(".empty-row"); }
-        );
+        // rebuild allRows and originalData AFTER all rows are in the DOM
+        allRows = Array.from(tbody.querySelectorAll("tr"));
         originalData = allRows.map(function(row) {
           return Array.from(row.cells).map(function(cell) {
             return { text: cell.textContent, html: cell.innerHTML };
           });
         });
 
-        // re-apply current filter
-				 buildTeamBadges();
+        // rebuild team badges and re-apply filters
+        buildTeamBadges();
         applyFilter();
       })
       .catch(function(err) {
@@ -1271,7 +1311,7 @@
     let sortCol = -1;
     let sortAsc = true;
 
-		    function sortTable(colIndex) {
+    function sortTable(colIndex) {
       if (sortCol === colIndex) {
         sortAsc = !sortAsc;
       } else {
@@ -1417,7 +1457,7 @@
       }
     }
 
-	  // ── detail / edit / delete ───────────────────────────────────────────
+    // ── detail / edit / delete ───────────────────────────────────────────
     const detailModal   = document.getElementById("detail-modal");
     const detailView    = document.getElementById("detail-view");
     const editView      = document.getElementById("edit-view");
@@ -1429,7 +1469,7 @@
       'po_sms','program','socket','system_config','make','model','category',
       'asset_owner','serial','maas_switch','pdu_ip','pdu_port',
       'site','lab','row_location','rack','ru','cpu','backplane','jira',
-			'box_id','current_project', 'team',
+      'box_id','current_project', 'team',
       'created_at','updated_at'
     ];
 
@@ -1439,7 +1479,7 @@
       'po_sms','program','socket','system_config','make','model','category',
       'asset_owner','serial','maas_switch','pdu_ip','pdu_port',
       'site','lab','row_location','rack','ru','cpu','backplane','jira',
-			'box_id','current_project', 'team'
+      'box_id','current_project', 'team'
     ];
 
     let currentMachine = null;   // holds the full machine object
@@ -1480,7 +1520,7 @@
           statusBadge.innerHTML += ` <span style="font-size:0.8rem; color:#856404; margin-left:0.5rem;">by ${machine.reserved_by}</span>`;
         }
 
-				// reservation info (read-only)
+        // reservation info (read-only)
         const reserveInfo = document.getElementById('detail-reserve-info');
         if (machine.status === 'reserved') {
           reserveInfo.innerHTML = `This machine is <strong style="color:#856404;">reserved</strong>` +
@@ -1647,8 +1687,7 @@
       }
     }
 
-		// 
-		    // ── team filter ──────────────────────────────────────────────────────
+    // ── team filter ──────────────────────────────────────────────────────
     var activeTeam = '';
 
     function buildTeamBadges() {
@@ -1839,6 +1878,45 @@
     // build team badges on page load
     buildTeamBadges();
 
+    // ── view toggle: minimal vs all columns ──────────────────────────────
+    var tableEl = document.getElementById('machine-table');
+    var viewCb = document.getElementById('view-toggle-cb');
+    var isAllColumns = false;
+
+    function applyView() {
+      var extras = document.querySelectorAll('.col-extra');
+      if (isAllColumns) {
+        extras.forEach(function(el) { el.style.display = 'table-cell'; });
+        tableEl.classList.remove('view-minimal');
+        tableEl.classList.add('view-all');
+        viewCb.checked = true;
+      } else {
+        extras.forEach(function(el) { el.style.display = 'none'; });
+        tableEl.classList.remove('view-all');
+        tableEl.classList.add('view-minimal');
+        viewCb.checked = false;
+      }
+
+      allRows = Array.from(tableBody.querySelectorAll("tr")).filter(
+        function(r) { return !r.querySelector(".empty-row"); }
+      );
+      originalData = allRows.map(function(row) {
+        return Array.from(row.cells).map(function(cell) {
+          return { text: cell.textContent, html: cell.innerHTML };
+        });
+      });
+
+      buildTeamBadges();
+      applyFilter();
+    }
+
+    function toggleView() {
+      isAllColumns = viewCb.checked;
+      applyView();
+    }
+
+    // apply on page load
+    applyView();
   </script>
 </body>
 </html>
