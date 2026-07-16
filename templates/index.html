@@ -589,6 +589,18 @@
       <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">update_machine -m &lt;name&gt;</code>
       &nbsp;│&nbsp;
       <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">delete_machine -m &lt;name&gt;</code>
+      &nbsp;│&nbsp;
+      <code style="background:#d6e9f8; padding:0.15rem 0.5rem; border-radius:3px;">update_machine_status -m &lt;name&gt; -s reserved [-r user]</code>
+    </div>
+    <div style="margin-top:0.6rem; padding:0.6rem 1rem; background:#fff8e1; border:1px solid #ffe082; border-radius:4px; font-size:0.78rem; color:#6d4c00; line-height:1.6;">
+      <strong>⚠ Special Case — Remote Reservation:</strong>
+      If the target machine cannot reach the inventory server (network isolation, firewall, etc.),
+      you can update its reservation status from <em>any machine</em> that <strong>can</strong> reach the server:<br>
+      <code style="background:#fff3cd; padding:0.1rem 0.4rem; border-radius:3px;">update_machine_status -m &lt;machine_name&gt; -s reserved -r &lt;your_name&gt;</code><br>
+      <span style="font-size:0.72rem; color:#888;">
+        Note: This only updates the database. The machine's local MOTD and wall broadcast will not be updated.
+        Run <code>machine-reserve</code> on the machine itself when connectivity is restored.
+      </span>
     </div>
 
   </div>
