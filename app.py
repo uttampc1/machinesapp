@@ -1,4 +1,7 @@
-from flask import Flask, request, jsonify, render_template
+import sqlite3
+import io
+import csv
+from flask import Flask, request, jsonify, render_template, Response
 from database import get_connection, init_db
 from datetime import datetime
 
@@ -359,6 +362,43 @@ def delete_machine(machine_name):
         "message":  f"Machine '{machine_name}' deleted.",
         "deleted":  machine,
     })
+
+def get_db_data():
+    """Helper function to fetch all rows and columns from the database."""
+    conn = get_connection()
+    # This row factory allows fetching data as dictionary-like objects (column_name: value)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    # Replace 'your_table_name' with your actual table
+    cursor.execute("SELECT * FROM machines")
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+@app.route('/machines/data/csv', methods=['GET'])
+def get_data_csv():
+    rows = get_db_data()
+    if not rows:
+        return Response("No data found", status=200, mimetype='text/csv')
+
+    # Extract headers from the first row keys
+    headers = rows[0].keys()
+
+    # Write data to an in-memory string buffer
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header and rows
+    writer.writerow(headers)
+    for row in rows:
+        writer.writerow(list(row))
+
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={"Content-disposition": "attachment; filename=database_export.csv"}
+    )
 
 # ── plain-text table for terminal callers ──────────────────────────────────────
 
