@@ -40,6 +40,7 @@ UPDATABLE_FIELDS = {
     "box_id",
     "current_project",
     "team",
+    "motd",
 }
 
 # Columns shown in the terminal table and their headers
@@ -75,6 +76,7 @@ COLUMNS = [
     ("description",   "DESCRIPTION"),
     ("box_id",          "BOX_ID"),
     ("current_project", "CURRENT_PROJECT"),
+    ("motd",          "MOTD"),
 ]
 
 
@@ -179,9 +181,9 @@ def insert_machine():
                  po_sms, program, socket, system_config, make, model, category,
                  asset_owner, serial, maas_switch, pdu_ip, pdu_port,
                  site, lab, row_location, rack, ru, cpu, backplane, jira,
-                 box_id, current_project, team,
+                 box_id, current_project, team, motd,
                  status, reserved_by)
-            VALUES (?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?,?, 'available', NULL)
+            VALUES (?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?,?,?, 'available', NULL)
         """, (
             data["machine_name"],
             data["platform_name"],
@@ -212,6 +214,7 @@ def insert_machine():
             data.get("box_id"),
             data.get("current_project"),
             data.get("team"),
+            data.get("motd"),
         ))
         conn.commit()
     except Exception as e:

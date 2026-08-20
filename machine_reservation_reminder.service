@@ -1,0 +1,8 @@
+[Unit]
+Description=Machine Reservation Reminder Email Job
+After=network.target
+
+[Service]
+Type=oneshot
+User=upawar
+ExecStart=/usr/local/bin/machine_reservation_reminder.sh --send

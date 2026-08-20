@@ -1,0 +1,15 @@
+[Unit]
+Description=Machine Invenstory Server
+After=network.target
+
+[Service]
+User=upawar
+Group=upawar
+WorkingDirectory=/opt/machinesapp
+Environment="PATH=/opt/machinesapp/venv/bin"
+ExecStart=/opt/machinesapp/venv/bin/python app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
