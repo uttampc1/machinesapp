@@ -24,6 +24,7 @@ sudo systemctl daemon-reload
 sudo systemctl reset-failed
 
 sudo rm -f  /usr/local/etc/reservation.config
+sudo rm -f  /usr/local/bin/machine_reservation_reminder.sh
 sudo rm -fr /opt/machinesapp
 
 systemctl list-timers | grep machine_reservation_reminder
