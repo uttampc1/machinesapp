@@ -63,6 +63,7 @@ INSTALL_CONFIG_DIR="/usr/local/etc"
 sudo mkdir -p $INSTALL_CONFIG_DIR
 sudo cp ./reservation.config                 ${INSTALL_CONFIG_DIR}/reservation.config 
 sudo cp machinesapp.service                  ${RESERVATION_WEB_SERVICE}
+sudo cp machine_reservation_reminder.sh      ${REMINDER_SCRIPT}
 sudo cp machine_reservation_reminder.service ${RESERVATION_REMINDER_SERVICE}
 sudo cp machine_reservation_reminder.timer   ${RESERVATION_REMINDER_TIMER}
 
@@ -74,12 +75,14 @@ sudo chmod 644 ${RESERVATION_REMINDER_TIMER}
 # 8. Enable and Start the Service
 echo "Reloading systemd, enabling and starting service..."
 sudo systemctl daemon-reload
-sudo systemctl enable "$SERVICE_NAME"
-sudo systemctl enable "$RESERVATION_REMINDER_TIMER"
+sudo systemctl enable --now "$SERVICE_NAME"
+sudo systemctl enable --now machine_reservation_reminder.timer
+sudo systemctl start        machine_reservation_reminder.service
 sudo systemctl restart "$SERVICE_NAME"
 
 echo "=== Installation Completed Successfully! ==="
 echo "Service status:"
 sudo systemctl status "$SERVICE_NAME" --no-pager
-sudo systemctl status "$RESERVATION_REMINDER_TIMER" --no-pager
+sudo systemctl status machine_reservation_reminder.timer --no-pager
+sudo systemctl status machine_reservation_reminder.service --no-pager
 
