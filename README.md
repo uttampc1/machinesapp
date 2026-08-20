@@ -18,13 +18,13 @@ sudo systemctl disable machinesapp.service
 
 sudo rm -f /etc/systemd/system/machinesapp.service
 sudo rm -f /etc/systemd/system/machine_reservation_reminder.service
-sudo rm -f /etc/systemd/system/machine_reservation_reminder.service
+sudo rm -f /etc/systemd/system/machine_reservation_reminder.timer
 
 sudo systemctl daemon-reload
 sudo systemctl reset-failed
 
-sudo rm -f /usr/local/etc/reservation.config
-sudo rm -f /opt/machinesapp
+sudo rm -f  /usr/local/etc/reservation.config
+sudo rm -fr /opt/machinesapp
 
 systemctl list-timers | grep machine_reservation_reminder
 systemctl status machine_reservation_reminder.timer
