@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Machine Reservation Reminder Daily at Midnight
+
+[Timer]
+OnCalendar=*-*-* 00:00:00
+Persistent=true
+Unit=machine_reservation_reminder.service
+
+[Install]
+WantedBy=timers.target

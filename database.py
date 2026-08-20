@@ -126,6 +126,13 @@ MIGRATIONS = [
             "ALTER TABLE machines ADD COLUMN team TEXT",
         ]
     },
+    {
+        "version": 9,
+        "name":    "add_motd_column",
+        "sql": [
+            "ALTER TABLE machines ADD COLUMN motd TEXT",
+        ]
+    },
 ]
 
 def get_applied_versions(conn):
