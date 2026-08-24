@@ -1102,9 +1102,8 @@
                   Reserve
                 </button>
               {% elif m.status == "reserved" %}
-                <span class="sr-only">reserved</span>
                 <span class="pill pill-reserved" title="This machine is currently reserved">
-                  In-Use
+                  reserved
                 </span>
               {% else %}
                 <span class="pill pill-{{ m.status }}">{{ m.status }}</span>
