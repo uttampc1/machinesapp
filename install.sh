@@ -82,7 +82,21 @@ sudo chmod 644 "${RESERVATION_REMINDER_TIMER}"
 # 8. Enable and Start the Service
 echo "Reloading systemd, enabling and starting service..."
 sudo systemctl daemon-reload
-sudo systemctl enable --now "$SERVICE_NAME"
+sudo systemctl enable "$SERVICE_NAME"
+sudo systemctl restart "$SERVICE_NAME"
+
+echo "Waiting for service..."
+sleep 2
+
+if sudo systemctl is-active --quiet "$SERVICE_NAME"; then
+    echo "Service started successfully."
+else
+    echo "ERROR: $SERVICE_NAME failed to start"
+    sudo systemctl status "$SERVICE_NAME" --no-pager -l || true
+    sudo journalctl -xeu "$SERVICE_NAME" --no-pager || true
+    exit 1
+fi
+
 sudo systemctl enable --now machine_reservation_reminder.timer
 
 echo "=== Installation Completed Successfully! ==="

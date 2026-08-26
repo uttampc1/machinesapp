@@ -8,7 +8,8 @@ Group=upawar
 WorkingDirectory=/opt/machinesapp
 Environment="MACHINES_DB_PATH=/var/lib/machinesapp/machines.db"
 Environment="PATH=/opt/machinesapp/venv/bin"
-ExecStart=/opt/machinesapp/venv/bin/python app.py
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/opt/machinesapp/venv/bin/gunicorn --workers 2 --bind 0.0.0.0:5000 app:app
 Restart=always
 
 [Install]
