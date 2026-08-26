@@ -1,4 +1,5 @@
 import sqlite3
+import os
 
 DB_FILE = os.environ.get("MACHINES_DB_PATH", "/var/lib/machinesapp/machines.db")
 
