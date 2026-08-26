@@ -9,7 +9,7 @@ WEB_URL="${SERVER}"
 SUBJECT="Machine reservation reminder"
 TEST_EMAIL="${TEST_EMAIL:-}"
 TEST_EMAIL="upawar"
-DRY_RUN=1
+DRY_RUN=0
 
 get_reserved_json() {
     "$LIST_CMD" -s reserved -j
@@ -95,9 +95,10 @@ get_active_machines_for_user() {
 build_email_body() {
     local attention_machines="$1"
     local active_machines="$2"
+    local user_email="$3"
 
     cat <<EOF
-Hello,
+Hello $user_email,
 
 This is your daily machine reservation reminder.
 
@@ -128,9 +129,14 @@ EOF
 print_email() {
     local user_email="$1"
     local email_body="$2"
+    local recipient="$user_email"
+
+    if [[ -n "$TEST_EMAIL" ]]; then
+      recipient="${TEST_EMAIL}"
+    fi
 
     echo "=================================================="
-    echo "TO: $user_email"
+    echo "TO: $recipient"
     echo "SUBJECT: $SUBJECT"
     echo "=================================================="
     printf '%s\n' "$email_body"
@@ -203,7 +209,7 @@ main() {
         active_machines="$(get_active_machines_for_user "$json" "$user_email")"
 
         local email_body
-        email_body="$(build_email_body "$attention_machines" "$active_machines")"
+        email_body="$(build_email_body "$attention_machines" "$active_machines" "$user_email")"
 
         if [[ "$DRY_RUN" -eq 1 ]]; then
             print_email "$user_email" "$email_body"
