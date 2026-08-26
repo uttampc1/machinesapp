@@ -15,6 +15,8 @@ REMINDER_SCRIPT="${INSTALL_BIN_DIR}/machine_reservation_reminder.sh"
 INSTALL_APP_DIR="/opt/machinesapp"
 SERVICE_NAME="machinesapp.service"
 
+APP_DB_DIR="/var/lib/machinesapp"
+
 SERVICE_DIR="/etc/systemd/system"
 RESERVATION_REMINDER_SERVICE="${SERVICE_DIR}/machine_reservation_reminder.service"
 RESERVATION_REMINDER_TIMER="${SERVICE_DIR}/machine_reservation_reminder.timer"
@@ -32,6 +34,11 @@ if ! id "$RUN_USER" &>/dev/null; then
     echo "Creating system user: $RUN_USER..."
     sudo useradd -r -s /bin/false "$RUN_USER"
 fi
+
+# Create a DB directory
+sudo mkdir -p  "$APP_DB_DIR"
+sudo chown     "$RUN_USER":"$RUN_USER" "$APP_DB_DIR"
+sudo chmod 755 "$APP_DB_DIR"
 
 # 3. Clone the repository
 echo "Cloning repository into $INSTALL_APP_DIR..."
@@ -60,30 +67,26 @@ sudo chown -R "$RUN_USER":"$RUN_USER" "$INSTALL_APP_DIR"
 # 7. Copy the Systemd Service File
 echo "Copy systemd service configuration..."
 INSTALL_CONFIG_DIR="/usr/local/etc"
-sudo mkdir -p $INSTALL_CONFIG_DIR
-sudo cp ./reservation.config                 ${INSTALL_CONFIG_DIR}/reservation.config 
-sudo cp machinesapp.service                  ${RESERVATION_WEB_SERVICE}
-sudo cp machine_reservation_reminder.sh      ${REMINDER_SCRIPT}
-sudo cp machine_reservation_reminder.service ${RESERVATION_REMINDER_SERVICE}
-sudo cp machine_reservation_reminder.timer   ${RESERVATION_REMINDER_TIMER}
+sudo mkdir -p "$INSTALL_CONFIG_DIR"
+sudo cp ./reservation.config                 "${INSTALL_CONFIG_DIR}/reservation.config"
+sudo cp machinesapp.service                  "${RESERVATION_WEB_SERVICE}"
+sudo cp machine_reservation_reminder.sh      "${REMINDER_SCRIPT}"
+sudo cp machine_reservation_reminder.service "${RESERVATION_REMINDER_SERVICE}"
+sudo cp machine_reservation_reminder.timer   "${RESERVATION_REMINDER_TIMER}"
 
-sudo chmod 444 ${INSTALL_CONFIG_DIR}/reservation.config
-sudo chmod 644 ${RESERVATION_WEB_SERVICE}
-sudo chmod 644 ${RESERVATION_REMINDER_SERVICE}
-sudo chmod 644 ${RESERVATION_REMINDER_TIMER}
+sudo chmod 444 "${INSTALL_CONFIG_DIR}/reservation.config"
+sudo chmod 644 "${RESERVATION_WEB_SERVICE}"
+sudo chmod 644 "${RESERVATION_REMINDER_SERVICE}"
+sudo chmod 644 "${RESERVATION_REMINDER_TIMER}"
 
 # 8. Enable and Start the Service
 echo "Reloading systemd, enabling and starting service..."
 sudo systemctl daemon-reload
 sudo systemctl enable --now "$SERVICE_NAME"
-sudo systemctl restart "$SERVICE_NAME"
-sleep 5
 sudo systemctl enable --now machine_reservation_reminder.timer
-sudo systemctl start        machine_reservation_reminder.service
 
 echo "=== Installation Completed Successfully! ==="
 echo "Service status:"
 sudo systemctl status "$SERVICE_NAME" --no-pager
 sudo systemctl status machine_reservation_reminder.timer --no-pager
-sudo systemctl status machine_reservation_reminder.service --no-pager
 

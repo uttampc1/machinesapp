@@ -1,6 +1,6 @@
 import sqlite3
 
-DB_FILE = "machines.db"
+DB_FILE = os.environ.get("MACHINES_DB_PATH", "/var/lib/machinesapp/machines.db")
 
 def get_connection():
     conn = sqlite3.connect(DB_FILE)
