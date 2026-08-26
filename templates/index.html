@@ -51,6 +51,32 @@
     .btn-danger { background: #dc3545; color: #fff; }
     .btn-danger:hover { background: #bd2130; }
 
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .status-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .status-btn-available {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
     /* ── search / filter bar ────────────────────────────────────────────── */
     .filter-bar {
       display: flex;
@@ -548,8 +574,7 @@
     line-height: 1.7;
   ">
     <strong style="font-size:0.92rem;">📋 Machine Management — Command Line Tools</strong>
-
-		<div style="margin-top:0.6rem; padding:0.6rem 1rem; background:#f5f5f5; border:1px solid #ddd; border-radius:4px; font-size:0.78rem; color:#555; line-height:1.6;">
+    <div style="margin-top:0.6rem; padding:0.6rem 1rem; background:#f5f5f5; border:1px solid #ddd; border-radius:4px; font-size:0.78rem; color:#555; line-height:1.6;">
       <strong>Note:</strong>
         Machine name is obtained from the <code>hostname</code> command on each machine.
         This field may need periodic update if it changes due to a new OS install or other system changes.
@@ -1063,7 +1088,28 @@
             <td>{{ m.ip_address    or "" }}</td>
             <td>{{ m.bmc_name      or "" }}</td>
             <td>{{ m.os            or "" }}</td>
-            <td><span class="pill pill-{{ m.status }}">{{ m.status }}</span></td>
+            <td data-status="{{ m.status }}">
+              {% if m.status == "available" %}
+                <span class="sr-only">available</span>
+                <button
+                  type="button"
+                  class="status-btn status-btn-available"
+                  data-status="{{ m.status }}"
+                  data-ip-address="{{ m.ip_address or '' }}"
+                  data-machine-name="{{ m.machine_name or '' }}"
+                  title="Click to reserve"
+                  onclick="handleStatusClick(this)">
+                  Reserve
+                </button>
+              {% elif m.status == "reserved" %}
+                <span class="pill pill-reserved" title="This machine is currently reserved">
+                  reserved
+                </span>
+              {% else %}
+                <span class="pill pill-{{ m.status }}">{{ m.status }}</span>
+              {% endif %}
+            </td>
+
             <td>{{ m.reserved_by   or "" }}</td>
             <td class="wrap-col">{{ m.description   or "" }}</td>
             <td>{{ m.team          or "" }}</td>
@@ -1116,6 +1162,8 @@
     // ── auto-refresh ─────────────────────────────────────────────────────
     let refreshTimer = null;
     const refreshSelect = document.getElementById("auto-refresh");
+    let isAllColumns = false;
+
     function refreshData() {
       fetch('/machines', {
         headers: { 'Accept': 'application/json' }
@@ -1127,10 +1175,10 @@
       .then(function(machines) {
         if (!machines) return;
 
-        // update badges
         var total = machines.length;
         var avail = 0;
         var reserved = 0;
+
         for (var i = 0; i < machines.length; i++) {
           if (machines[i].status === 'available') avail++;
           else if (machines[i].status === 'reserved') reserved++;
@@ -1145,7 +1193,6 @@
 
         document.getElementById("ts").textContent = new Date().toLocaleString();
 
-        // rebuild table body
         var tbody = document.querySelector("#machine-table tbody");
         tbody.innerHTML = '';
 
@@ -1153,6 +1200,8 @@
           tbody.innerHTML = '<tr><td class="empty-row" colspan="32">No machines registered yet.</td></tr>';
           allRows = [];
           originalData = [];
+          buildTeamBadges();
+          applyFilter();
           return;
         }
 
@@ -1183,7 +1232,6 @@
             if (colIdx === 7) classes.push('wrap-col');
             if (classes.length > 0) td.className = classes.join(' ');
 
-            // set display based on current view state
             if (extraCols.indexOf(colIdx) !== -1) {
               td.style.display = isAllColumns ? 'table-cell' : 'none';
             }
@@ -1194,11 +1242,36 @@
               strong.textContent = val;
               strong.setAttribute('onclick', "showDetail('" + val.replace(/'/g, "\\'") + "')");
               td.appendChild(strong);
+
             } else if (colIdx === 5) {
-              var span = document.createElement('span');
-              span.className = 'pill pill-' + val;
-              span.textContent = val;
-              td.appendChild(span);
+              td.dataset.status = val;
+
+              if (val === 'available') {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'status-btn status-btn-available';
+                btn.dataset.status = val;
+                btn.dataset.ipAddress = m.ip_address || '';
+                btn.dataset.machineName = m.machine_name || '';
+                btn.title = 'Click to reserve';
+                btn.textContent = 'Reserve';
+                btn.onclick = function() { handleStatusClick(this); };
+                td.appendChild(btn);
+
+              } else if (val === 'reserved') {
+                var span = document.createElement('span');
+                span.className = 'pill pill-reserved';
+                span.title = 'This machine is currently reserved';
+                span.textContent = 'Reserved';
+                td.appendChild(span);
+
+              } else {
+                var other = document.createElement('span');
+                other.className = 'pill pill-' + val;
+                other.textContent = val;
+                td.appendChild(other);
+              }
+
             } else {
               td.textContent = val;
             }
@@ -1209,15 +1282,19 @@
           tbody.appendChild(tr);
         });
 
-        // rebuild allRows and originalData AFTER all rows are in the DOM
-        allRows = Array.from(tbody.querySelectorAll("tr"));
+        allRows = Array.from(tbody.querySelectorAll("tr")).filter(function(r) {
+          return !r.querySelector(".empty-row");
+        });
+
         originalData = allRows.map(function(row) {
           return Array.from(row.cells).map(function(cell) {
-            return { text: cell.textContent, html: cell.innerHTML };
+            return {
+              text: cell.textContent,
+              html: cell.innerHTML
+            };
           });
         });
 
-        // rebuild team badges and re-apply filters
         buildTeamBadges();
         applyFilter();
       })
@@ -1228,7 +1305,7 @@
 
     function setAutoRefresh() {
       if (refreshTimer) clearInterval(refreshTimer);
-      var secs = parseInt(refreshSelect.value);
+      var secs = parseInt(refreshSelect.value, 10);
       if (secs > 0) {
         refreshTimer = setInterval(refreshData, secs * 1000);
       }
@@ -1239,21 +1316,25 @@
 
     // ── store original cell data ─────────────────────────────────────────
     const tableBody = document.querySelector("#machine-table tbody");
-    let allRows     = Array.from(tableBody.querySelectorAll("tr")).filter(
-      r => !r.querySelector(".empty")
-    );
-    let originalData = allRows.map(row =>
-      Array.from(row.cells).map(cell => ({
-        text: cell.textContent,
-        html: cell.innerHTML
-      }))
-    );
+    let allRows = Array.from(tableBody.querySelectorAll("tr")).filter(function(r) {
+      return !r.querySelector(".empty-row");
+    });
+    let originalData = allRows.map(function(row) {
+      return Array.from(row.cells).map(function(cell) {
+        return {
+          text: cell.textContent,
+          html: cell.innerHTML
+        };
+      });
+    });
 
-    // ── search / filter ──────────────────────────────────────────────────
-    const searchInput   = document.getElementById("search-input");
-    const filterStatus  = document.getElementById("filter-status");
-    const filterCount   = document.getElementById("filter-count");
-    const visibleCount  = document.getElementById("visible-count");
+    // ── search / filter / team filter ────────────────────────────────────
+    const searchInput = document.getElementById("search-input");
+    const filterStatus = document.getElementById("filter-status");
+    const filterCount = document.getElementById("filter-count");
+    const visibleCount = document.getElementById("visible-count");
+
+    let activeTeam = '';
 
     function escapeRegex(str) {
       return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1265,27 +1346,64 @@
       return text.replace(regex, '<mark>$1</mark>');
     }
 
+    function getTeamColumnIndex() {
+      var headers = document.querySelectorAll('#machine-table th');
+      for (var i = 0; i < headers.length; i++) {
+        if (headers[i].textContent.trim().toLowerCase().indexOf('team') === 0) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function restoreRowHtml(row, rowIndex) {
+      Array.from(row.cells).forEach(function(cell, cellIndex) {
+        if (originalData[rowIndex] && originalData[rowIndex][cellIndex]) {
+          cell.innerHTML = originalData[rowIndex][cellIndex].html;
+        }
+      });
+    }
+
     function applyFilter() {
       const searchTerm = searchInput.value.toLowerCase().trim();
-      const status     = filterStatus.value.toLowerCase();
+      const status = filterStatus.value.toLowerCase();
+      const teamCol = getTeamColumnIndex();
       let shown = 0;
 
-      allRows.forEach((row, rowIndex) => {
-        const cellData   = originalData[rowIndex];
-        const allText    = cellData.map(c => c.text.toLowerCase()).join(" ");
-        const rowStatus  = cellData[5].text.toLowerCase().trim();
+      allRows.forEach(function(row, rowIndex) {
+        const cellData = originalData[rowIndex];
+        if (!cellData) return;
 
-        const textMatch   = !searchTerm || allText.includes(searchTerm);
-        const statusMatch = !status     || rowStatus === status;
+        const allText = cellData.map(function(c) { return c.text.toLowerCase(); }).join(" ");
+        const rowStatus = (row.cells[5] && row.cells[5].dataset.status || "").toLowerCase().trim();
 
-        if (textMatch && statusMatch) {
+        let teamMatch = true;
+        if (activeTeam && teamCol !== -1) {
+          const rowTeam = (cellData[teamCol] && cellData[teamCol].text || '').trim();
+          if (activeTeam === '__none__') {
+            teamMatch = !rowTeam;
+          } else {
+            teamMatch = rowTeam === activeTeam;
+          }
+        }
+
+        const textMatch = !searchTerm || allText.includes(searchTerm);
+        const statusMatch = !status || rowStatus === status;
+
+        if (textMatch && statusMatch && teamMatch) {
           row.classList.remove("hidden");
           shown++;
 
           if (searchTerm) {
-            Array.from(row.cells).forEach((cell, cellIndex) => {
+            Array.from(row.cells).forEach(function(cell, cellIndex) {
               const original = cellData[cellIndex];
-              if (cellIndex === 5) { cell.innerHTML = original.html; return; }
+              if (!original) return;
+
+              if (cellIndex === 0 || cellIndex === 5) {
+                cell.innerHTML = original.html;
+                return;
+              }
+
               const cellText = original.text;
               if (cellText.toLowerCase().includes(searchTerm)) {
                 cell.innerHTML = highlightText(cellText, searchTerm);
@@ -1294,30 +1412,36 @@
               }
             });
           } else {
-            Array.from(row.cells).forEach((cell, cellIndex) => {
-              cell.innerHTML = originalData[rowIndex][cellIndex].html;
-            });
+            restoreRowHtml(row, rowIndex);
           }
         } else {
           row.classList.add("hidden");
-          Array.from(row.cells).forEach((cell, cellIndex) => {
-            cell.innerHTML = originalData[rowIndex][cellIndex].html;
-          });
+          restoreRowHtml(row, rowIndex);
         }
       });
 
       const total = allRows.length;
-      if (searchTerm || status) {
-        filterCount.textContent = `Showing ${shown} of ${total}`;
+      if (searchTerm || status || activeTeam) {
+        filterCount.textContent = "Showing " + shown + " of " + total;
       } else {
         filterCount.textContent = "";
       }
-      visibleCount.textContent = `${shown} machine(s) displayed`;
+
+      visibleCount.textContent = shown + " machine(s) displayed";
+      updateTeamStats();
     }
 
     function clearFilter() {
-      searchInput.value  = "";
+      searchInput.value = "";
       filterStatus.value = "";
+      activeTeam = '';
+
+      var badges = document.querySelectorAll('.team-badge');
+      badges.forEach(function(b) {
+        if (b.getAttribute('data-team') === '') b.classList.add('active');
+        else b.classList.remove('active');
+      });
+
       applyFilter();
       searchInput.focus();
     }
@@ -1327,7 +1451,6 @@
     searchInput.addEventListener("keyup", function(e) {
       if (e.key === "Escape") clearFilter();
     });
-    applyFilter();
 
     // ── column sorting ───────────────────────────────────────────────────
     let sortCol = -1;
@@ -1341,9 +1464,11 @@
         sortAsc = true;
       }
 
-      const paired = allRows.map((row, i) => ({ row, data: originalData[i] }));
+      const paired = allRows.map(function(row, i) {
+        return { row: row, data: originalData[i] };
+      });
 
-      paired.sort((a, b) => {
+      paired.sort(function(a, b) {
         const aText = a.data[colIndex].text.trim().toLowerCase();
         const bText = b.data[colIndex].text.trim().toLowerCase();
 
@@ -1355,22 +1480,21 @@
 
         if (!aText && bText) return 1;
         if (aText && !bText) return -1;
-
         if (aText < bText) return sortAsc ? -1 : 1;
         if (aText > bText) return sortAsc ? 1 : -1;
         return 0;
       });
 
-      paired.forEach((p, i) => {
+      paired.forEach(function(p, i) {
         tableBody.appendChild(p.row);
+        allRows[i] = p.row;
         originalData[i] = p.data;
-        allRows[i]      = p.row;
       });
 
       applyFilter();
 
       const ths = document.querySelectorAll("#machine-table th .sort-arrow");
-      ths.forEach((arrow, i) => {
+      ths.forEach(function(arrow, i) {
         arrow.textContent = (i === colIndex) ? (sortAsc ? "▲" : "▼") : "⇅";
       });
     }
@@ -1386,14 +1510,13 @@
 
     // ── insert form modal ────────────────────────────────────────────────
     const insertModal = document.getElementById("insert-modal");
-    const insertForm  = document.getElementById("insert-form");
-    const formMsg     = document.getElementById("form-msg");
+    const insertForm = document.getElementById("insert-form");
+    const formMsg = document.getElementById("form-msg");
 
     function openInsertForm() {
       formMsg.className = "form-msg";
       formMsg.textContent = "";
       insertModal.classList.add("active");
-      // focus first input
       insertForm.querySelector('input[name="machine_name"]').focus();
     }
 
@@ -1407,14 +1530,12 @@
       formMsg.textContent = "";
     }
 
-    // close modal on Escape
     document.addEventListener("keydown", function(e) {
       if (e.key === "Escape" && insertModal.classList.contains("active")) {
         closeInsertForm();
       }
     });
 
-    // close modal on overlay click (not on modal itself)
     insertModal.addEventListener("click", function(e) {
       if (e.target === insertModal) {
         closeInsertForm();
@@ -1428,18 +1549,14 @@
       submitBtn.disabled = true;
       submitBtn.textContent = "Submitting...";
 
-      // collect form data into JSON
       const formData = new FormData(insertForm);
       const payload = {};
 
       for (const [key, value] of formData.entries()) {
         const trimmed = value.trim();
-        if (trimmed) {
-          payload[key] = trimmed;
-        }
+        if (trimmed) payload[key] = trimmed;
       }
 
-      // validate required fields
       if (!payload.machine_name || !payload.platform_name) {
         formMsg.className = "form-msg error";
         formMsg.textContent = "Machine Name and Platform are required.";
@@ -1460,11 +1577,7 @@
         if (response.ok) {
           formMsg.className = "form-msg success";
           formMsg.textContent = `✓ ${result.message || "Machine added successfully!"}`;
-
-          // reload page after short delay so user sees the success message
-          setTimeout(() => {
-            location.reload();
-          }, 1200);
+          setTimeout(function() { location.reload(); }, 1200);
         } else {
           formMsg.className = "form-msg error";
           formMsg.textContent = `✗ ${result.error || "Failed to add machine."}`;
@@ -1480,44 +1593,40 @@
     }
 
     // ── detail / edit / delete ───────────────────────────────────────────
-    const detailModal   = document.getElementById("detail-modal");
-    const detailView    = document.getElementById("detail-view");
-    const editView      = document.getElementById("edit-view");
-    const detailMsg     = document.getElementById("detail-msg");
+    const detailModal = document.getElementById("detail-modal");
+    const detailView = document.getElementById("detail-view");
+    const editView = document.getElementById("edit-view");
+    const detailMsg = document.getElementById("detail-msg");
 
-    // all fields we display in detail view
     const DETAIL_FIELDS = [
       'platform_name','ip_address','bmc_name','os','reserved_by','description',
       'po_sms','program','socket','system_config','make','model','category',
       'asset_owner','serial','maas_switch','pdu_ip','pdu_port',
       'site','lab','row_location','rack','ru','cpu','backplane','jira',
-      'box_id','current_project', 'team',
+      'box_id','current_project','team',
       'created_at','updated_at'
     ];
 
-    // all fields in the edit form
     const EDIT_FIELDS = [
       'machine_name','platform_name','ip_address','bmc_name','os','description',
       'po_sms','program','socket','system_config','make','model','category',
       'asset_owner','serial','maas_switch','pdu_ip','pdu_port',
       'site','lab','row_location','rack','ru','cpu','backplane','jira',
-      'box_id','current_project', 'team'
+      'box_id','current_project','team'
     ];
 
-    let currentMachine = null;   // holds the full machine object
-    let currentMachineName = ''; // the name used in the URL (in case of rename)
+    let currentMachine = null;
+    let currentMachineName = '';
 
-    // ── fetch one machine from API ───────────────────────────────────────
     async function fetchMachine(name) {
       const resp = await fetch('/machines', {
         headers: { 'Accept': 'application/json' }
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const machines = await resp.json();
-      return machines.find(m => m.machine_name === name) || null;
+      return machines.find(function(m) { return m.machine_name === name; }) || null;
     }
 
-    // ── show detail modal ────────────────────────────────────────────────
     async function showDetail(name) {
       detailMsg.className = 'form-msg';
       detailMsg.textContent = '';
@@ -1532,17 +1641,14 @@
         currentMachine = machine;
         currentMachineName = machine.machine_name;
 
-        // populate header
         document.getElementById('detail-machine-name').textContent = machine.machine_name;
 
-        // status badge
         const statusBadge = document.getElementById('detail-status-badge');
         statusBadge.innerHTML = `<span class="pill pill-${machine.status}">${machine.status}</span>`;
         if (machine.status === 'reserved' && machine.reserved_by) {
           statusBadge.innerHTML += ` <span style="font-size:0.8rem; color:#856404; margin-left:0.5rem;">by ${machine.reserved_by}</span>`;
         }
 
-        // reservation info (read-only)
         const reserveInfo = document.getElementById('detail-reserve-info');
         if (machine.status === 'reserved') {
           reserveInfo.innerHTML = `This machine is <strong style="color:#856404;">reserved</strong>` +
@@ -1551,8 +1657,7 @@
           reserveInfo.innerHTML = `This machine is <strong style="color:#155724;">available</strong>.`;
         }
 
-        // populate detail fields
-        DETAIL_FIELDS.forEach(field => {
+        DETAIL_FIELDS.forEach(function(field) {
           const el = document.getElementById('dv-' + field);
           if (el) {
             const val = machine[field];
@@ -1566,13 +1671,9 @@
           }
         });
 
-        // reset delete confirm
         document.getElementById('delete-confirm').classList.remove('active');
-
-        // show detail view, hide edit view
         detailView.classList.remove('hidden');
         editView.classList.remove('active');
-
         detailModal.classList.add('active');
 
       } catch (err) {
@@ -1586,26 +1687,17 @@
       currentMachineName = '';
     }
 
-    // close on Escape or overlay click
     detailModal.addEventListener("click", function(e) {
       if (e.target === detailModal) closeDetail();
     });
 
-    // ── edit mode ────────────────────────────────────────────────────────
     function startEdit() {
       if (!currentMachine) return;
 
-      // populate edit form with current values
       const form = document.getElementById('edit-form');
-      EDIT_FIELDS.forEach(field => {
+      EDIT_FIELDS.forEach(function(field) {
         const input = form.querySelector(`[name="${field}"]`);
-        if (input) {
-          if (input.tagName === 'TEXTAREA') {
-            input.value = currentMachine[field] || '';
-          } else {
-            input.value = currentMachine[field] || '';
-          }
-        }
+        if (input) input.value = currentMachine[field] || '';
       });
 
       detailView.classList.add('hidden');
@@ -1630,14 +1722,10 @@
       const formData = new FormData(form);
       const payload = {};
 
-      // only include fields that changed
       for (const [key, value] of formData.entries()) {
         const trimmed = value.trim();
         const original = currentMachine[key] || '';
-
-        if (trimmed !== original) {
-          payload[key] = trimmed || null;  // send null to clear a field
-        }
+        if (trimmed !== original) payload[key] = trimmed || null;
       }
 
       if (Object.keys(payload).length === 0) {
@@ -1654,12 +1742,13 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+
         const result = await resp.json();
 
         if (resp.ok) {
           detailMsg.className = 'form-msg success';
           detailMsg.textContent = `✓ ${result.message || 'Machine updated!'}`;
-          setTimeout(() => location.reload(), 1200);
+          setTimeout(function() { location.reload(); }, 1200);
         } else {
           detailMsg.className = 'form-msg error';
           detailMsg.textContent = `✗ ${result.error || 'Update failed.'}`;
@@ -1674,7 +1763,6 @@
       }
     }
 
-    // ── delete ───────────────────────────────────────────────────────────
     function confirmDelete() {
       document.getElementById('delete-confirm').classList.add('active');
     }
@@ -1683,262 +1771,223 @@
       document.getElementById('delete-confirm').classList.remove('active');
     }
 
-    async function doDelete() {
+    async function executeDelete() {
       if (!currentMachineName) return;
 
+      const btn = document.getElementById('delete-btn');
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+
       try {
-        const resp = await fetch(`/machines/${encodeURIComponent(currentMachineName)}?force=true`, {
+        const resp = await fetch(`/machines/${encodeURIComponent(currentMachineName)}`, {
           method: 'DELETE'
         });
+
         const result = await resp.json();
 
         if (resp.ok) {
           detailMsg.className = 'form-msg success';
-          detailMsg.textContent = `✓ Machine '${currentMachineName}' deleted.`;
-          document.getElementById('delete-confirm').classList.remove('active');
-          setTimeout(() => location.reload(), 1000);
+          detailMsg.textContent = `✓ ${result.message || 'Machine deleted!'}`;
+          setTimeout(function() { location.reload(); }, 1000);
         } else {
           detailMsg.className = 'form-msg error';
           detailMsg.textContent = `✗ ${result.error || 'Delete failed.'}`;
-          cancelDelete();
+          btn.disabled = false;
+          btn.textContent = '🗑 Delete';
         }
       } catch (err) {
         detailMsg.className = 'form-msg error';
         detailMsg.textContent = `✗ Network error: ${err.message}`;
-        cancelDelete();
+        btn.disabled = false;
+        btn.textContent = '🗑 Delete';
       }
     }
 
-    // ── team filter ──────────────────────────────────────────────────────
-    var activeTeam = '';
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape" && detailModal.classList.contains("active")) {
+        if (editView.classList.contains("active")) {
+          cancelEdit();
+        } else {
+          closeDetail();
+        }
+      }
+    });
+
+    // ── team badges / stats ──────────────────────────────────────────────
+    function normalizeTeamName(name) {
+      return (name || '').trim();
+    }
 
     function buildTeamBadges() {
-      // collect unique team values from originalData
-      var teamSet = {};
-      var teamCol = 8;
+      const wrap = document.getElementById('team-badges');
+      if (!wrap) return;
 
-      // find team column index — it's the one before "Updated"
-      var headers = document.querySelectorAll('#machine-table th');
-      for (var i = 0; i < headers.length; i++) {
-        if (headers[i].textContent.trim().toLowerCase().indexOf('team') === 0) {
-          teamCol = i;
-          break;
-        }
+      const teamCol = getTeamColumnIndex();
+      const counts = {};
+
+      if (teamCol !== -1) {
+        allRows.forEach(function(row, rowIndex) {
+          const team = normalizeTeamName(originalData[rowIndex][teamCol].text);
+          const key = team || '__none__';
+          counts[key] = (counts[key] || 0) + 1;
+        });
       }
-      if (teamCol === -1) return;
 
-      allRows.forEach(function(row, idx) {
-        var teamVal = originalData[idx][teamCol].text.trim();
-        if (teamVal) {
-          teamSet[teamVal] = (teamSet[teamVal] || 0) + 1;
-        }
+      const keys = Object.keys(counts).sort(function(a, b) {
+        if (a === '__none__') return 1;
+        if (b === '__none__') return -1;
+        return a.localeCompare(b);
       });
 
-      var container = document.getElementById('team-badges');
-      // keep the label and "All" button, remove the rest
-      while (container.children.length > 2) {
-        container.removeChild(container.lastChild);
-      }
+      let html = '';
+      html += `<button type="button" class="team-badge ${activeTeam === '' ? 'active' : ''}" data-team="">All <span>${allRows.length}</span></button>`;
 
-      // count unassigned
-      var assigned = 0;
-      var teamNames = Object.keys(teamSet).sort();
-      teamNames.forEach(function(name) {
-        assigned += teamSet[name];
-        var btn = document.createElement('button');
-        btn.className = 'btn team-badge';
-        btn.setAttribute('data-team', name);
-        btn.setAttribute('onclick', "filterByTeam('" + name.replace(/'/g, "\\'") + "')");
-        btn.textContent = name + ' (' + teamSet[name] + ')';
-        btn.style.fontSize = '0.72rem';
-        btn.style.padding = '0.3rem 0.8rem';
-        container.appendChild(btn);
+      keys.forEach(function(key) {
+        const label = key === '__none__' ? 'Unassigned' : key;
+        const active = activeTeam === key ? 'active' : '';
+        html += `<button type="button" class="team-badge ${active}" data-team="${key}">${label} <span>${counts[key]}</span></button>`;
       });
 
-      var unassigned = allRows.length - assigned;
-      if (unassigned > 0) {
-        var btn = document.createElement('button');
-        btn.className = 'btn team-badge';
-        btn.setAttribute('data-team', '__none__');
-        btn.setAttribute('onclick', "filterByTeam('__none__')");
-        btn.textContent = 'Unassigned (' + unassigned + ')';
-        btn.style.fontSize = '0.72rem';
-        btn.style.padding = '0.3rem 0.8rem';
-        container.appendChild(btn);
-      }
+      wrap.innerHTML = html;
 
-      // update All count
-      var allBtn = container.querySelector('[data-team=""]');
-      if (allBtn) {
-        allBtn.textContent = 'All (' + allRows.length + ')';
-      }
-    }
+      wrap.querySelectorAll('.team-badge').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          activeTeam = this.dataset.team;
 
-    function filterByTeam(team) {
-      activeTeam = team;
+          wrap.querySelectorAll('.team-badge').forEach(function(b) {
+            b.classList.remove('active');
+          });
+          this.classList.add('active');
 
-      // update badge active state
-      var badges = document.querySelectorAll('.team-badge');
-      badges.forEach(function(b) {
-        var bTeam = b.getAttribute('data-team');
-        if (bTeam === team) {
-          b.classList.add('active');
-        } else {
-          b.classList.remove('active');
-        }
+          applyFilter();
+        });
       });
 
-      applyFilter();
       updateTeamStats();
     }
 
     function updateTeamStats() {
-      var statsEl = document.getElementById('team-stats');
-      if (!activeTeam) {
-        statsEl.textContent = '';
+      const stats = document.getElementById('team-stats');
+      if (!stats) return;
+
+      const teamCol = getTeamColumnIndex();
+      if (teamCol === -1) {
+        stats.innerHTML = '';
         return;
       }
 
-      var label = activeTeam === '__none__' ? 'Unassigned' : activeTeam;
-      var visibleRows = allRows.filter(function(r) { return !r.classList.contains('hidden'); });
-      var avail = 0;
-      var reserved = 0;
-
-      visibleRows.forEach(function(row) {
-        var statusCell = row.cells[5];
-        if (statusCell) {
-          var s = statusCell.textContent.trim().toLowerCase();
-          if (s === 'available') avail++;
-          else if (s === 'reserved') reserved++;
-        }
-      });
-
-      statsEl.innerHTML = 'Showing: <strong>' + label + '</strong> (' + visibleRows.length + ' machines) — ' +
-        '<span style="color:#155724;">Available: ' + avail + '</span> | ' +
-        '<span style="color:#856404;">Reserved: ' + reserved + '</span>';
-    }
-
-    // ── patch applyFilter to include team filtering ──────────────────────
-    var _originalApplyFilter = applyFilter;
-
-    applyFilter = function() {
-      var searchTerm = searchInput.value.toLowerCase().trim();
-      var status = filterStatus.value.toLowerCase();
-      var shown = 0;
-
-      // find team column index
-      var teamCol = -1;
-      var headers = document.querySelectorAll('#machine-table th');
-      for (var i = 0; i < headers.length; i++) {
-        if (headers[i].textContent.trim().toLowerCase().indexOf('team') === 0) {
-          teamCol = i;
-          break;
-        }
-      }
+      const map = {};
 
       allRows.forEach(function(row, rowIndex) {
-        var cellData = originalData[rowIndex];
-        var allText = cellData.map(function(c) { return c.text.toLowerCase(); }).join(" ");
-        var rowStatus = cellData[5] ? cellData[5].text.toLowerCase().trim() : "";
+        if (row.classList.contains('hidden')) return;
 
-        // team filter
-        var teamMatch = true;
-        if (activeTeam && teamCol !== -1) {
-          var rowTeam = cellData[teamCol].text.trim();
-          if (activeTeam === '__none__') {
-            teamMatch = !rowTeam;
-          } else {
-            teamMatch = rowTeam === activeTeam;
-          }
+        const team = normalizeTeamName(originalData[rowIndex][teamCol].text) || 'Unassigned';
+        const statusCell = row.cells[5];
+        const s = (statusCell.dataset.status || '').trim().toLowerCase();
+
+        if (!map[team]) {
+          map[team] = { total: 0, available: 0, reserved: 0, other: 0 };
         }
 
-        var textMatch = !searchTerm || allText.includes(searchTerm);
-        var statusMatch = !status || rowStatus === status;
-
-        if (textMatch && statusMatch && teamMatch) {
-          row.classList.remove("hidden");
-          shown++;
-
-          if (searchTerm) {
-            Array.from(row.cells).forEach(function(cell, cellIndex) {
-              var original = cellData[cellIndex];
-              if (cellIndex === 5 || cellIndex === 0) {
-                cell.innerHTML = original.html;
-                return;
-              }
-              var cellText = original.text;
-              if (cellText.toLowerCase().includes(searchTerm)) {
-                cell.innerHTML = highlightText(cellText, searchTerm);
-              } else {
-                cell.innerHTML = original.html;
-              }
-            });
-          } else {
-            Array.from(row.cells).forEach(function(cell, cellIndex) {
-              cell.innerHTML = originalData[rowIndex][cellIndex].html;
-            });
-          }
-        } else {
-          row.classList.add("hidden");
-          Array.from(row.cells).forEach(function(cell, cellIndex) {
-            cell.innerHTML = originalData[rowIndex][cellIndex].html;
-          });
-        }
+        map[team].total++;
+        if (s === 'available') map[team].available++;
+        else if (s === 'reserved') map[team].reserved++;
+        else map[team].other++;
       });
 
-      var total = allRows.length;
-      if (searchTerm || status || activeTeam) {
-        filterCount.textContent = "Showing " + shown + " of " + total;
-      } else {
-        filterCount.textContent = "";
-      }
-      visibleCount.textContent = shown + " machine(s) displayed";
-
-      updateTeamStats();
-    };
-
-    // build team badges on page load
-    buildTeamBadges();
-
-    // ── view toggle: minimal vs all columns ──────────────────────────────
-    var tableEl = document.getElementById('machine-table');
-    var viewCb = document.getElementById('view-toggle-cb');
-    var isAllColumns = false;
-
-    function applyView() {
-      var extras = document.querySelectorAll('.col-extra');
-      if (isAllColumns) {
-        extras.forEach(function(el) { el.style.display = 'table-cell'; });
-        tableEl.classList.remove('view-minimal');
-        tableEl.classList.add('view-all');
-        viewCb.checked = true;
-      } else {
-        extras.forEach(function(el) { el.style.display = 'none'; });
-        tableEl.classList.remove('view-all');
-        tableEl.classList.add('view-minimal');
-        viewCb.checked = false;
-      }
-
-      allRows = Array.from(tableBody.querySelectorAll("tr")).filter(
-        function(r) { return !r.querySelector(".empty-row"); }
-      );
-      originalData = allRows.map(function(row) {
-        return Array.from(row.cells).map(function(cell) {
-          return { text: cell.textContent, html: cell.innerHTML };
-        });
+      const teams = Object.keys(map).sort(function(a, b) {
+        if (a === 'Unassigned') return 1;
+        if (b === 'Unassigned') return -1;
+        return a.localeCompare(b);
       });
 
-      buildTeamBadges();
-      applyFilter();
+      if (teams.length === 0) {
+        stats.innerHTML = '';
+        return;
+      }
+
+      stats.innerHTML = teams.map(function(team) {
+        const x = map[team];
+        return `
+          <div class="team-stat">
+            <strong>${team}</strong>
+            <span>Total: ${x.total}</span>
+            <span>Available: ${x.available}</span>
+            <span>Reserved: ${x.reserved}</span>
+          </div>
+        `;
+      }).join('');
     }
 
-    function toggleView() {
-      isAllColumns = viewCb.checked;
+    // ── status actions ───────────────────────────────────────────────────
+    async function handleStatusClick(button) {
+      const status = (button.dataset.status || '').toLowerCase();
+      const machineName = button.dataset.machineName || '';
+      const ipAddress = button.dataset.ipAddress || '';
+
+      if (status !== 'available') return;
+
+      const userEmail = prompt(
+        `Reserve machine ${machineName}${ipAddress ? ' (' + ipAddress + ')' : ''}\n\nEnter your email address:`
+      );
+
+      if (userEmail === null) return;
+
+      const trimmed = userEmail.trim();
+      if (!trimmed) {
+        alert('Reservation cancelled: email is required.');
+        return;
+      }
+
+      button.disabled = true;
+
+      try {
+        const resp = await fetch('/machines/reserve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_email: trimmed,
+            ip_address: ipAddress,
+            machine_name: machineName
+          })
+        });
+
+        const result = await resp.json();
+
+        if (resp.ok) {
+          refreshData();
+        } else {
+          alert(result.error || 'Failed to reserve machine.');
+          button.disabled = false;
+        }
+      } catch (err) {
+        alert(`Network error: ${err.message}`);
+        button.disabled = false;
+      }
+    }
+
+    // ── column view toggle ───────────────────────────────────────────────
+    function applyView() {
+      document.querySelectorAll('.col-extra').forEach(function(cell) {
+        cell.style.display = isAllColumns ? 'table-cell' : 'none';
+      });
+
+      const btn = document.getElementById('toggle-columns-btn');
+      if (btn) {
+        btn.textContent = isAllColumns ? 'Show Essential Columns' : 'Show All Columns';
+      }
+    }
+
+    function toggleColumns() {
+      isAllColumns = !isAllColumns;
       applyView();
     }
 
-    // apply on page load
+    // initial setup
     applyView();
+    buildTeamBadges();
+    applyFilter();
   </script>
+
 </body>
 </html>

@@ -1,6 +1,7 @@
 import sqlite3
 import io
 import csv
+import requests
 from flask import Flask, request, jsonify, render_template, Response
 from database import get_connection, init_db
 from datetime import datetime
@@ -159,6 +160,70 @@ def list_machines():
 
     return jsonify(machines)
 
+# ── RESERVE ─────────────────────────────────────────────────────────────────────
+# POST /machines/reserve
+@app.route('/machines/reserve', methods=['POST'])
+def reserve_machine():
+    data = request.get_json(silent=True) or {}
+
+    user_email = (data.get('user_email') or '').strip()
+    machine_name = (data.get('machine_name') or '').strip()
+    ip_address = (data.get('ip_address') or '').strip()
+
+    if not user_email:
+        return jsonify({'error': 'user_email is required'}), 400
+    if not machine_name:
+        return jsonify({'error': 'machine_name is required'}), 400
+    if not ip_address:
+        return jsonify({'error': 'ip_address is required'}), 400
+
+    try:
+        remote_url = f'http://{ip_address}:5001/reserve'
+        payload = {
+            'user_email': user_email,
+            'machine_name': machine_name
+        }
+
+        print(f'[reserve_machine] remote_url={remote_url}')
+        print(f'[reserve_machine] payload={payload}')
+
+        resp = requests.post(remote_url, json=payload, timeout=30)
+
+        print(f'[reserve_machine] response_status={resp.status_code}')
+        print(f'[reserve_machine] response_text={resp.text}')
+        try:
+            result = resp.json()
+        except Exception:
+            result = {'error': resp.text or 'Invalid response from remote reserve service'}
+
+        if resp.ok:
+            return jsonify({
+                'message': result.get('message', 'Machine reserved successfully'),
+                'machine_name': machine_name,
+                'ip_address': ip_address,
+                'user_email': user_email
+            }), 200
+        else:
+            return jsonify({
+                'error': result.get('error', 'Remote reservation failed'),
+                'details': result.get('details', '')
+            }), resp.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({
+            'error': f'Timeout while contacting reserve service on {ip_address}:5001'
+        }), 504
+
+    except requests.exceptions.ConnectionError:
+        return jsonify({
+            'error': f'Could not connect to reserve service on {ip_address}:5001'
+        }), 502
+
+    except Exception as e:
+        return jsonify({
+            'error': 'Unexpected server error during reservation',
+            'details': str(e)
+        }), 500
 
 # ── INSERT ─────────────────────────────────────────────────────────────────────
 # POST /machines
