@@ -134,6 +134,13 @@ MIGRATIONS = [
             "ALTER TABLE machines ADD COLUMN motd TEXT",
         ]
     },
+    {
+        "version": 10,
+        "name":    "add_isalive_column",
+        "sql": [
+            "ALTER TABLE machines ADD COLUMN isalive TEXT NOT NULL DEFAULT 'unknown'"
+        ]
+    },
 ]
 
 def get_applied_versions(conn):
