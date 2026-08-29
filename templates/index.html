@@ -231,6 +231,7 @@
       max-width: 100%;
       border: 1px solid #ddd;
       border-radius: 8px;
+      position: relative;
     }
 
     table {
@@ -523,7 +524,7 @@
     .team-badge:not(.active) { background: #e0e5ee; color: #2c3e6b; }
     .team-badge:not(.active):hover { background: #c8d0e0; }
 
-	  .status-text-available {
+    .status-text-available {
       font-weight: 600;
       color: #2e7d32;
     }
@@ -538,7 +539,7 @@
       font-size: 0.95rem;
       color: #444;
     }
-		.machine-name-cell {
+    .machine-name-cell {
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -1084,9 +1085,9 @@
 
   <!-- ── main table ───────────────────────────────────────────────────── -->
   <div>
-	  <p class="table-legend">
+    <p class="table-legend">
       <strong>Legend:</strong>
-		  <strong class="status-btn-available">Reserve</strong> = reservable machine,
+      <strong class="status-btn-available">Reserve</strong> = reservable machine,
       <strong class="status-text status-text-available">AVAILABLE</strong> = available but not reservable,
       <strong class="status-text status-text-reserved">RESERVED</strong> = currently reserved.
     </p>
@@ -1133,7 +1134,7 @@
         {% if machines %}
           {% for m in machines %}
           <tr>
-						<td>
+            <td>
               <span class="machine-name-cell">
                 <span
                   class="alive-dot alive-{{ m.isalive or 'unknown' }}"
@@ -1166,9 +1167,9 @@
                 </button>
               {% else %}
                 <span class="status-text status-text-available"
-								  title="Available but not reservable (no IP address configured). Use BMC interface.">
-									AVAILABLE
-								</span>
+                  title="Available but not reservable (no IP address configured). Use BMC interface.">
+                  AVAILABLE
+                </span>
               {% endif %}
             </td>
 
@@ -1327,7 +1328,7 @@
             }
 
             if (colIdx === 0) {
-							renderMachineNameCell(td, m);
+              renderMachineNameCell(td, m);
             } else if (colIdx === 5) {
               td.dataset.status = val;
 
@@ -1340,7 +1341,7 @@
                 spanReserved.textContent = 'RESERVED';
                 td.appendChild(spanReserved);
               } else if (val === 'available' && hasIp) {
-							  var srOnly = document.createElement('span');
+                var srOnly = document.createElement('span');
                 srOnly.className = 'sr-only';
                 srOnly.textContent = 'available';
                 td.appendChild(srOnly);
@@ -2010,7 +2011,6 @@
 
     // ── status actions ───────────────────────────────────────────────────
     async function handleStatusClick(button) {
-		  console.log ('clicked on handleStatusClick button');
       const status = (button.dataset.status || '').toLowerCase();
       const machineName = button.dataset.machineName || '';
       const ipAddress = button.dataset.ipAddress || '';
@@ -2056,7 +2056,7 @@
       }
     }
 
-		document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function () {
       var machinesTable = document.getElementById("machine-table");
       if (!machinesTable) return;
 
