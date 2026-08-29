@@ -538,6 +538,31 @@
       font-size: 0.95rem;
       color: #444;
     }
+		.machine-name-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .alive-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex: 0 0 10px;
+    }
+
+    .alive-on {
+      background-color: #2e7d32;
+    }
+
+    .alive-off {
+      background-color: #c62828;
+    }
+
+    .alive-unknown {
+      background-color: #d4a017;
+    }
   </style>
 </head>
 <body>
@@ -1108,7 +1133,17 @@
         {% if machines %}
           {% for m in machines %}
           <tr>
-            <td><strong class="machine-link" onclick="showDetail('{{ m.machine_name }}')">{{ m.machine_name }}</strong></td>
+						<td>
+              <span class="machine-name-cell">
+                <span
+                  class="alive-dot alive-{{ m.isalive or 'unknown' }}"
+                  title="{% if m.isalive == 'on' %}machine is on{% elif m.isalive == 'off' %}machine is off{% else %}don't know{% endif %}">
+                </span>
+                <strong class="machine-link" onclick="showDetail('{{ m.machine_name }}')">
+                  {{ m.machine_name }}
+                </strong>
+              </span>
+            </td>
             <td>{{ m.platform_name or "" }}</td>
             <td>{{ m.ip_address    or "" }}</td>
             <td>{{ m.bmc_name      or "" }}</td>
@@ -1191,6 +1226,34 @@
     const refreshSelect = document.getElementById("auto-refresh");
     let isAllColumns = false;
 
+    function renderMachineNameCell(td, machine) {
+      var wrapper = document.createElement('span');
+      wrapper.className = 'machine-name-cell';
+
+      var dot = document.createElement('span');
+      var aliveState = machine.isalive || 'unknown';
+      dot.className = 'alive-dot alive-' + aliveState;
+
+      if (aliveState === 'on') {
+        dot.title = 'machine is on';
+      } else if (aliveState === 'off') {
+        dot.title = 'machine is off';
+      } else {
+        dot.title = "don't know";
+      }
+
+      var name = document.createElement('strong');
+      name.className = 'machine-link';
+      name.textContent = machine.machine_name || '';
+      name.onclick = function () {
+        showDetail(machine.machine_name);
+      };
+
+      wrapper.appendChild(dot);
+      wrapper.appendChild(name);
+      td.appendChild(wrapper);
+    }
+
     function refreshData() {
       fetch('/machines', {
         headers: { 'Accept': 'application/json' }
@@ -1264,12 +1327,7 @@
             }
 
             if (colIdx === 0) {
-              var strong = document.createElement('strong');
-              strong.className = 'machine-link';
-              strong.textContent = val;
-              strong.setAttribute('onclick', "showDetail('" + val.replace(/'/g, "\\'") + "')");
-              td.appendChild(strong);
-
+							renderMachineNameCell(td, m);
             } else if (colIdx === 5) {
               td.dataset.status = val;
 
