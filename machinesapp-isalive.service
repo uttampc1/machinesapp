@@ -1,0 +1,11 @@
+[Unit]
+Description=Update machine isalive status
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=upawar
+Group=upawar
+WorkingDirectory=/opt/machinesapp
+ExecStart=/opt/machinesapp/venv/bin/python /opt/machinesapp/check_isalive.py
