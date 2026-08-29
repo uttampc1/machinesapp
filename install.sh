@@ -87,8 +87,7 @@ sudo chmod 644 "${RESERVATION_REMINDER_TIMER}"
 echo "Reloading systemd, enabling and starting service..."
 sudo systemctl daemon-reload
 sudo systemctl enable "$SERVICE_NAME"
-sudo systemctl enable "$RESERVATION_REMINDER_TIMER"
-sudo systemctl enable --now "$RESERVATION_REMINDER_SERVICE"
+sudo systemctl enable --now "$RESERVATION_REMINDER_TIMER"
 sudo systemctl restart "$SERVICE_NAME"
 
 echo "Waiting for service..."
@@ -109,4 +108,4 @@ echo "=== Installation Completed Successfully! ==="
 echo "Service status:"
 sudo systemctl status "$SERVICE_NAME" --no-pager
 sudo systemctl status machine_reservation_reminder.timer --no-pager
-
+echo "Check the log: journalctl -u machinesapp-isalive.service -n 50 --no-pager"
