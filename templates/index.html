@@ -1127,7 +1127,8 @@
           <th class="col-extra col-sep" onclick="sortTable(28)">JIRA <span class="sort-arrow">⇅</span></th>
           <th class="col-extra" onclick="sortTable(29)">Box ID <span class="sort-arrow">⇅</span></th>
           <th class="col-extra" onclick="sortTable(30)">Current Project <span class="sort-arrow">⇅</span></th>
-          <th onclick="sortTable(31)">Updated <span class="sort-arrow">⇅</span></th>
+          <th class="col-extra" onclick="sortTable(31)">MOTD</th>
+          <th onclick="sortTable(32)">Updated <span class="sort-arrow">⇅</span></th>
         </tr>
       </thead>
       <tbody>
@@ -1140,7 +1141,7 @@
                   class="alive-dot alive-{{ m.isalive or 'unknown' }}"
                   title="{% if m.isalive == 'on' %}machine is on{% elif m.isalive == 'off' %}machine is off{% else %}don't know{% endif %}">
                 </span>
-                <strong class="machine-link" onclick="showDetail('{{ m.machine_name }}')">
+                <strong class="machine-link" data-machine-name="{{ m.machine_name }}">
                   {{ m.machine_name }}
                 </strong>
               </span>
@@ -1198,6 +1199,7 @@
             <td class="col-extra col-sep">{{ m.jira           or "" }}</td>
             <td class="col-extra">{{ m.box_id        or "" }}</td>
             <td class="col-extra">{{ m.current_project or "" }}</td>
+            <td class="col-extra">{{ m.motd or "" }}</td>
             <td>{{ m.updated_at }}</td>
           </tr>
           {% endfor %}
@@ -1246,9 +1248,7 @@
       var name = document.createElement('strong');
       name.className = 'machine-link';
       name.textContent = machine.machine_name || '';
-      name.onclick = function () {
-        showDetail(machine.machine_name);
-      };
+      name.dataset.machineName = machine.machine_name || '';
 
       wrapper.appendChild(dot);
       wrapper.appendChild(name);
@@ -1256,6 +1256,9 @@
     }
 
     function refreshData() {
+      if (document.hidden) return;
+      if (detailModal && getComputedStyle(detailModal).display !== 'none') return;
+
       fetch('/machines', {
         headers: { 'Accept': 'application/json' }
       })
@@ -1742,7 +1745,7 @@
         const reserveInfo = document.getElementById('detail-reserve-info');
         if (machine.status === 'reserved') {
           reserveInfo.innerHTML = `This machine is <strong style="color:#856404;">reserved</strong>` +
-            (machine.reserved_by ? ` by <strong>${machine.reserved_by}</strong>` : '') + '.';
+            (machine.reserved_by ? ` by <strong>${machine.reserved_by}</strong>` : '') + `.<br><strong>${machine.motd}</strong>`;
         } else {
           reserveInfo.innerHTML = `This machine is <strong style="color:#155724;">available</strong>.`;
         }
@@ -2066,6 +2069,16 @@
 
         handleStatusClick(btn);
       });
+    });
+
+    document.querySelector('.table-wrap').addEventListener('click', function (e) {
+      var link = e.target.closest('.machine-link');
+      if (!link) return;
+
+      var machineName = link.dataset.machineName;
+      if (machineName) {
+        showDetail(machineName);
+      }
     });
 
     // ── column view toggle ───────────────────────────────────────────────
